@@ -22,6 +22,13 @@ pub struct AudioFormatModule {
     pub encoder: Option<AudioEncoder>,
 }
 
+impl AudioFormatModule {
+    /// Writable with no pure-Rust encoder: FFmpeg writes it (M4A and AAC).
+    pub fn via_ffmpeg(&self) -> bool {
+        self.descriptor.can_write && self.encoder.is_none()
+    }
+}
+
 pub static MODULES: &[AudioFormatModule] = &[
     wav::MODULE,
     mp3::MODULE,
@@ -46,7 +53,16 @@ mod tests {
     #[test]
     fn modules_have_unique_ids_and_consistent_encoders() {
         for (index, module) in MODULES.iter().enumerate() {
-            assert_eq!(module.descriptor.can_write, module.encoder.is_some());
+            if module.encoder.is_some() {
+                assert!(module.descriptor.can_write);
+            }
+            // Only targets the FFmpeg audio path knows may go without an encoder.
+            if module.via_ffmpeg() {
+                assert!(matches!(
+                    crate::handlers::video::formats::target_of(module.descriptor.id),
+                    Some(crate::handlers::video::formats::Target::Audio(_))
+                ));
+            }
             for other in &MODULES[index + 1..] {
                 assert_ne!(module.descriptor.id, other.descriptor.id);
             }
@@ -70,5 +86,8 @@ mod tests {
         assert!(find("M4A").is_some());
         assert!(find("opus").and_then(|m| m.encoder).is_some());
         assert!(find("ogg").and_then(|m| m.encoder).is_none());
+        assert!(!find("ogg").unwrap().via_ffmpeg());
+        assert!(find("m4a").unwrap().via_ffmpeg());
+        assert!(find("aac").unwrap().via_ffmpeg());
     }
 }

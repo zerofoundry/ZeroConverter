@@ -75,6 +75,7 @@ Probing, validation, the queue, the command line, rename-to-convert, the right-c
 
 - **Read only:** reading goes through Symphonia (`pcm.rs`), so the format can be read only if Symphonia's features in `zeroconverter-core/Cargo.toml` include its container and codec. The module then needs just the descriptor with `can_write: false` and `encoder: None`.
 - **Writable:** add an `encoder` that takes the decoded PCM and the checked `AudioOptions` and writes the file. Options are read in `AudioOptions::parse`; a key that only some formats use is listed with those formats in the command line's capabilities.
+- **Written by FFmpeg:** `can_write: true` with `encoder: None` (M4A, AAC). `AudioFormatModule::via_ffmpeg` sends these to the video family's audio path, so the target must also be an `AudioTarget` in `handlers/video/formats.rs`; a test checks that.
 - **Recognising the file:** audio signatures are in `zeroconverter-core/src/sniff.rs`, in the hand-written part. Add yours with a test next to the others, or rename-to-convert and the menu will not offer the format.
 - **Tests:** a round trip through `AudioHandler` (see the existing format modules), a damaged file, and the options it accepts and refuses. The test in `formats/mod.rs` fails if a name is claimed twice.
 

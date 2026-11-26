@@ -307,6 +307,35 @@ fn to_gif(
 
 // ── audio extraction ────────────────────────────────────────────────────────
 
+/// An audio file to a target only FFmpeg writes (M4A, AAC): the same path as
+/// a video's audio track, stream copy when the source is already AAC.
+pub fn audio_via_ffmpeg(
+    request: &ConversionRequest,
+    ctx: &ExecContext,
+) -> Result<ConversionResult, AppError> {
+    let Some(Target::Audio(target)) = target_of(&request.output_format.0) else {
+        return Err(AppError::Execute(format!(
+            "Unsupported audio output format: {}",
+            request.output_format.0
+        )));
+    };
+    if ctx.is_cancelled() {
+        return Err(cancelled());
+    }
+    extract_audio(
+        Path::new(&request.input_path),
+        Path::new(&request.output_path),
+        target,
+        &AudioOptions::parse(&request.options)?,
+        ctx,
+    )
+    .map(|mut done| {
+        // An audio file is converted, not extracted from a video.
+        done.message = format!("Converted to {}", audio_id(target).to_uppercase());
+        done
+    })
+}
+
 fn audio_id(a: AudioTarget) -> &'static str {
     match a {
         AudioTarget::Wav => "wav",

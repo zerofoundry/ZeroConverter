@@ -1,4 +1,5 @@
 use crate::app_error::AppError;
+use crate::conversion::traits::ExecContext;
 use crate::conversion::types::{ConversionRequest, ConversionResult};
 use crate::handlers::audio::formats;
 use crate::handlers::audio::shape::AudioOptions;
@@ -51,11 +52,21 @@ pub(crate) fn success_result(output: &Path, message: &str) -> ConversionResult {
 }
 
 pub fn execute_audio(request: &ConversionRequest) -> Result<ConversionResult, AppError> {
+    execute_audio_with(request, &ExecContext::none())
+}
+
+pub fn execute_audio_with(
+    request: &ConversionRequest,
+    ctx: &ExecContext,
+) -> Result<ConversionResult, AppError> {
     let input = Path::new(&request.input_path);
     let output = Path::new(&request.output_path);
     let target = request.output_format.0.to_lowercase();
     let module = formats::find(&target)
         .ok_or_else(|| AppError::Execute(format!("Unsupported audio output format: {target}")))?;
+    if module.via_ffmpeg() {
+        return crate::handlers::video::execute::audio_via_ffmpeg(request, ctx);
+    }
     let encode = module.encoder.ok_or_else(|| {
         AppError::Execute(format!("Unsupported output format: {target} (read-only)"))
     })?;
@@ -170,6 +181,43 @@ mod tests {
         );
 
         assert_no_temp_workspace_debris(output_dir.path());
+    }
+
+    /// With FFmpeg: WAV -> M4A (AAC encode) -> AAC (stream copy). Without it:
+    /// the typed "needs FFmpeg" error the rename flow turns into the download
+    /// prompt, and nothing on disk.
+    #[test]
+    fn wav_becomes_m4a_and_aac_through_ffmpeg() {
+        use crate::handlers::video::execute::FFMPEG_MISSING;
+        let input = create_test_wav(2, 44100, 500);
+        let dir = tempfile::tempdir().unwrap();
+        let m4a = dir.path().join("song.m4a");
+        let result = execute_audio(&make_request(
+            AssetFamily::Audio,
+            input.path(),
+            &m4a,
+            "m4a",
+            None,
+        ));
+        if crate::handlers::video::ffmpeg::locate().is_none() {
+            assert!(
+                matches!(&result, Err(AppError::Execute(m)) if m == FFMPEG_MISSING),
+                "{result:?}"
+            );
+            assert_eq!(std::fs::read_dir(dir.path()).unwrap().count(), 0);
+            return;
+        }
+        result.unwrap();
+        let head = std::fs::read(&m4a).unwrap();
+        assert_eq!(&head[4..8], b"ftyp", "an MP4 container");
+        probe_audio(&m4a).unwrap();
+
+        let aac = dir.path().join("song.aac");
+        execute_audio(&make_request(AssetFamily::Audio, &m4a, &aac, "aac", None)).unwrap();
+        let head = std::fs::read(&aac).unwrap();
+        assert!(head[0] == 0xFF && head[1] & 0xF0 == 0xF0, "an ADTS stream");
+        probe_audio(&aac).unwrap();
+        assert_no_temp_workspace_debris(dir.path());
     }
 
     #[test]

@@ -1,14 +1,15 @@
 use super::AudioFormatModule;
 use crate::conversion::types::FormatDescriptor;
 
-// ADTS AAC-LC, decoded by Symphonia's opt-in "aac" feature.
+// ADTS AAC-LC. Read with Symphonia's opt-in "aac" feature; written by FFmpeg
+// (see `AudioFormatModule::via_ffmpeg`).
 pub const MODULE: AudioFormatModule = AudioFormatModule {
     descriptor: FormatDescriptor {
         id: "aac",
         canonical_extension: "aac",
         aliases: &[],
         can_read: true,
-        can_write: false,
+        can_write: true,
     },
     encoder: None,
 };

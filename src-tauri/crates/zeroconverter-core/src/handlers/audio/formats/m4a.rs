@@ -1,16 +1,16 @@
 use super::AudioFormatModule;
 use crate::conversion::types::FormatDescriptor;
 
-// ISO BMFF / MP4 audio container, not an AAC encoder. `.mp4` belongs to the
-// video family; its audio-extraction routes decode MP4 audio with Symphonia
-// before falling back to FFmpeg.
+// ISO BMFF / MP4 audio container. Read with Symphonia; written as AAC by
+// FFmpeg (no pure-Rust AAC encoder), so it has no `encoder` here: see
+// `AudioFormatModule::via_ffmpeg`. `.mp4` belongs to the video family.
 pub const MODULE: AudioFormatModule = AudioFormatModule {
     descriptor: FormatDescriptor {
         id: "m4a",
         canonical_extension: "m4a",
         aliases: &["m4b"],
         can_read: true,
-        can_write: false,
+        can_write: true,
     },
     encoder: None,
 };

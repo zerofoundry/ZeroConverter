@@ -44,14 +44,14 @@ The interface comes in 12 languages: English, Türkçe, Deutsch, Español, Fran�
 
 ## Formats
 
-26 image, texture, HDR and audio formats, converted locally and offline. Everything is pure Rust except MP3 encoding (LAME, LGPL). Video is the one exception: it runs through FFmpeg: one already on the PC is used, otherwise it is downloaded once from Settings → Video or on first use (see [Video](#video)).
+26 image, texture, HDR and audio formats, converted locally and offline. Everything is pure Rust except MP3 encoding (LAME, LGPL). Video, and writing M4A or AAC, are the exceptions: they run through FFmpeg: one already on the PC is used, otherwise it is downloaded once from Settings → Video or on first use (see [Video](#video)).
 
 | | Read and write | Read only | Write only |
 |---|---|---|---|
 | **Images** | PNG, JPG, WebP, BMP, TIFF, ICO, QOI, TGA | SVG, GIF, PSD (composite), JPEG XL | PDF, AVIF |
 | **Game textures** | DDS (reads BC1–BC7; writes BC1–BC5, BC7), KTX2 (uncompressed RGBA8) | | |
 | **HDR** | OpenEXR, Radiance HDR | | |
-| **Audio** | WAV, MP3, FLAC, AIFF, Opus | OGG Vorbis, AAC, M4A | |
+| **Audio** | WAV, MP3, FLAC, AIFF, Opus; M4A and AAC (written with FFmpeg) | OGG Vorbis | |
 | **Video** (FFmpeg) | MP4, MKV, MOV, WebM | AVI | GIF; audio out as WAV, MP3, FLAC, AIFF, Opus, M4A, AAC |
 
 Known limits: Windows only; animated GIF input is rejected; EXR/HDR written to 8/16-bit formats is clamped to 0–1 (no tone mapping); multi-layer PSD is read as its flattened composite; DDS/KTX2 read a single 2D surface (no mip chains, arrays or cube maps).

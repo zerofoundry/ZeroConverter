@@ -24,7 +24,7 @@ pub fn validate_audio(request: &ConversionRequest) -> Result<(), AppError> {
     let source = super::formats::find(&input_ext);
     let destination = super::formats::find(&output_format_ext);
     if !matches!(source, Some(module) if module.descriptor.can_read)
-        || !matches!(destination, Some(module) if module.encoder.is_some())
+        || !matches!(destination, Some(module) if module.descriptor.can_write)
         || source.map(|module| module.descriptor.id)
             == destination.map(|module| module.descriptor.id)
     {
@@ -184,11 +184,13 @@ mod tests {
     }
 
     #[test]
-    fn validate_rejects_ogg_to_aac_unsupported() {
-        let input = create_malformed_file(MalformedMode::Garbage, "ogg");
-        let output = Path::new("output.aac");
-        let req = make_request(AssetFamily::Audio, input.path(), output, "aac", None);
-        assert!(validate_audio(&req).is_err());
+    fn validate_accepts_mp3_to_m4a_and_ogg_to_aac() {
+        for (source, target) in [("mp3", "m4a"), ("ogg", "aac"), ("m4a", "aac")] {
+            let input = create_malformed_file(MalformedMode::Garbage, source);
+            let output = Path::new("output.tmp");
+            let req = make_request(AssetFamily::Audio, input.path(), output, target, None);
+            assert!(validate_audio(&req).is_ok(), "{source} -> {target}");
+        }
     }
 
     #[test]
@@ -266,7 +268,7 @@ mod tests {
     fn every_writable_descriptor_in_at_least_one_route_output() {
         use crate::handlers::audio::all_descriptors;
 
-        let allowed_outputs: Vec<&str> = vec!["mp3", "wav", "flac", "aiff", "opus"]; // outputs from route pairs
+        let allowed_outputs: Vec<&str> = vec!["mp3", "wav", "flac", "aiff", "opus", "m4a", "aac"]; // outputs from route pairs
         for desc in all_descriptors().iter().filter(|d| d.can_write) {
             assert!(
                 allowed_outputs.contains(&desc.id),
@@ -305,7 +307,7 @@ mod tests {
     #[test]
     fn only_registered_writable_targets_are_allowed() {
         let input = create_malformed_file(MalformedMode::Garbage, "aiff");
-        for target in ["ogg", "aac", "m4a", "unknown", "aiff"] {
+        for target in ["ogg", "unknown", "aiff"] {
             let request = make_request(
                 AssetFamily::Audio,
                 input.path(),

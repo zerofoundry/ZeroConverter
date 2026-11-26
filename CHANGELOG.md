@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- M4A and AAC output for audio files (#9): rename `song.mp3` to `song.m4a`. Encoded with FFmpeg's AAC encoder at 192 kbps, or stream-copied when the source is already AAC; needs FFmpeg like video does.
+
 ## 0.1.1
 
 - Settings › Convert on rename › Keep the original file (#7): option to keep originals on disk without typing `&` (`&` then sends that one original to the Recycle Bin instead).
