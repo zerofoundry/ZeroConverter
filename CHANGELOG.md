@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Frontend dependencies updated past all reported npm advisories (#8): Vite 7.3.8, PostCSS 8.5.33 and their build tooling; i18next 27 with react-i18next 18. `npm audit` reports none.
+
 ## 0.1.1
 
 - Settings › Convert on rename › Keep the original file (#7): option to keep originals on disk without typing `&` (`&` then sends that one original to the Recycle Bin instead).
