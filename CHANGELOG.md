@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- M4A and AAC output for audio files (#9): rename `song.mp3` to `song.m4a`. Encoded with FFmpeg's AAC encoder at 192 kbps, or stream-copied when the source is already AAC; needs FFmpeg like video does.
+- Frontend dependencies updated past all reported npm advisories (#8): Vite 7.3.8, PostCSS 8.5.33 and their build tooling; i18next 27 with react-i18next 18. `npm audit` reports none.
 - The options panel shows what each output format can actually be set to, as the engine declares it: video quality for MP4, MKV, MOV and WebM; bitrate, sample rate and mono when a video's audio is saved as MP3, Opus, FLAC or AIFF; and per-family sections in a mixed batch. The `+` window and the details pane use the same list, and only the options a format honours are sent with a conversion.
 - The same defaults everywhere: image quality starts at 90 in the app as it does for rename and the command line (it was 80 in the app). Settings from 0.1.x carry over.
 - Opus no longer offers a sample rate it would not use (Opus always runs at 48 kHz), and its bitrate defaults to "Automatic" (64 kbps mono, 128 kbps stereo), which is what it did.
