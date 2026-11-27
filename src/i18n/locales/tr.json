@@ -36,23 +36,6 @@
     "familyOutputFormat": "{{family}} için çıktı biçimi",
     "icoLimit": "ICO en çok 256×256 px olabilir.",
     "options": "Seçenekler",
-    "quality": "Kalite",
-    "compression": "Sıkıştırma",
-    "mipmaps": "Mipmap oluştur",
-    "bitrate": "Bit hızı",
-    "sampleRate": "Örnekleme hızı",
-    "channels": "Kanallar",
-    "original": "Özgün",
-    "mono": "Mono",
-    "resize": "Yeniden boyutlandır",
-    "resizeNone": "Özgün boyut",
-    "resizeMaxWidth": "En fazla genişlik",
-    "resizeMaxHeight": "En fazla yükseklik",
-    "resizeFitBox": "Kutuya sığdır",
-    "widthPlaceholder": "Genişlik px",
-    "heightPlaceholder": "Yükseklik px",
-    "widthLabel": "Hedef genişlik (piksel)",
-    "heightLabel": "Hedef yükseklik (piksel)",
     "overwrite": "Var olan dosyaların üzerine yaz",
     "overwriteOn": "Var olan çıktıların üzerine yazılır.",
     "overwriteOff": "Var olan dosyalar korunur; yeni çıktılara benzersiz ad verilir.",
@@ -62,13 +45,55 @@
     "convertCount_one": "{{count}} dosyayı dönüştür",
     "convertCount_other": "{{count}} dosyayı dönüştür"
   },
-  "dds": {
-    "bc7": "{{name}} · en iyi renk + alfa",
-    "bc3": "{{name}} · renk + alfa",
-    "bc1": "{{name}} · renk, en küçük",
-    "bc4": "{{name}} · tek kanal",
-    "bc5": "{{name}} · normal haritalar",
-    "bc2": "{{name}} · keskin alfa (eski)"
+  "option": {
+    "unset": "Özgün",
+    "quality": {
+      "label": "Kalite"
+    },
+    "resize_mode": {
+      "label": "Yeniden boyutlandır",
+      "values": {
+        "none": "Özgün boyut",
+        "max_width": "En fazla genişlik",
+        "max_height": "En fazla yükseklik",
+        "fit_box": "Kutuya sığdır"
+      }
+    },
+    "resize_width": {
+      "label": "Hedef genişlik (piksel)",
+      "placeholder": "Genişlik px"
+    },
+    "resize_height": {
+      "label": "Hedef yükseklik (piksel)",
+      "placeholder": "Yükseklik px"
+    },
+    "dds_format": {
+      "label": "Sıkıştırma",
+      "values": {
+        "bc7": "{{name}} · en iyi renk + alfa",
+        "bc3": "{{name}} · renk + alfa",
+        "bc1": "{{name}} · renk, en küçük",
+        "bc4": "{{name}} · tek kanal",
+        "bc5": "{{name}} · normal haritalar",
+        "bc2": "{{name}} · keskin alfa (eski)"
+      }
+    },
+    "dds_mipmaps": {
+      "label": "Mipmap oluştur"
+    },
+    "bitrate_kbps": {
+      "label": "Bit hızı",
+      "unset": "Otomatik"
+    },
+    "sample_rate": {
+      "label": "Örnekleme hızı"
+    },
+    "channels": {
+      "label": "Kanallar",
+      "values": {
+        "1": "Mono"
+      }
+    }
   },
   "picker": {
     "optionLabel": "{{format}} çıktı biçimi",
@@ -181,8 +206,6 @@
     "mono": "Mono",
     "stereo": "Stereo",
     "settingsUsed": "Kullanılan ayarlar",
-    "quality": "Kalite",
-    "resize": "Yeniden boyutlandırma",
     "overwrite": "Üzerine yazma",
     "result": "Sonuç",
     "open": "Aç",
@@ -199,7 +222,6 @@
     "reset": "Sıfırla",
     "resetTitle": "Yine her kaynak dosyanın yanına kaydet",
     "change": "Değiştir…",
-    "resizeLabel": "{{mode}} ({{dims}})",
     "channelsCount_one": "{{count}} kanal",
     "channelsCount_other": "{{count}} kanal"
   },
@@ -217,8 +239,6 @@
   "quick": {
     "gone": "Bu dönüştürme artık beklemiyor.",
     "largeFile": "Bu dosya {{size}} boyutunda. Dönüştürme uzun sürebilir ve diskte çok yer kaplayabilir.",
-    "quality": "Kalite",
-    "bitrate": "Bit hızı",
     "longestSide": "En uzun kenar",
     "original": "Özgün",
     "cancel": "İptal",

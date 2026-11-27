@@ -17,6 +17,7 @@ pub const MODULE: AudioFormatModule = AudioFormatModule {
         can_write: true,
     },
     encoder: Some(encode),
+    options: &[&shape::SAMPLE_RATE, &shape::CHANNELS],
 };
 
 struct AiffWriter<W: Write + Seek> {

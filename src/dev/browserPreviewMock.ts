@@ -22,6 +22,40 @@ const videoDescriptors = [
   wo("gif"), wo("wav"), wo("mp3"), wo("flac"), wo("aiff"), wo("opus"), wo("m4a"), wo("aac"),
 ];
 
+// What the engine declares per target (see `conversion::options`); the real
+// lists come from Rust, these only make the preview panel look like the app.
+const slider = (key: string, def: number) =>
+  ({ key, type: "integer", control: "slider", min: 1, max: 100, default: def, scope: "format", quick: true });
+const resize = [
+  { key: "resize_mode", type: "string", control: "choice", values: ["none", "max_width", "max_height", "fit_box"], default: "none", scope: "family", quick: false },
+  { key: "resize_width", type: "integer", control: "number", min: 1, max: 16384, presets: [], default: null, unit: "px", scope: "family", quick: false, show_when: { key: "resize_mode", values: ["max_width", "fit_box"] } },
+  { key: "resize_height", type: "integer", control: "number", min: 1, max: 16384, presets: [], default: null, unit: "px", scope: "family", quick: false, show_when: { key: "resize_mode", values: ["max_height", "fit_box"] } },
+];
+const sampleRate = { key: "sample_rate", type: "integer", control: "number", min: 8000, max: 192000, presets: [44100, 48000], default: null, unit: "hz", scope: "family", quick: false };
+const channels = { key: "channels", type: "integer", control: "choice", values: [null, 1], default: null, scope: "family", quick: false };
+const bitrate = (presets: number[], def: number | null) =>
+  ({ key: "bitrate_kbps", type: "integer", control: "number", min: 32, max: 512, presets, default: def, unit: "kbps", scope: "format", quick: true });
+const audioOptions: Record<string, unknown[]> = {
+  wav: [sampleRate, channels], flac: [sampleRate, channels], aiff: [sampleRate, channels],
+  mp3: [bitrate([128, 192, 256, 320], 320), sampleRate, channels], opus: [bitrate([64, 96, 128, 192], null), channels],
+};
+const optionsFor = (family: string, id: string): unknown[] => {
+  if (family === "image") {
+    const own =
+      id === "jpg" || id === "avif" ? [slider("quality", 90)]
+      : id === "dds" ? [
+          { key: "dds_format", type: "string", control: "choice", values: ["bc7", "bc3", "bc1", "bc4", "bc5", "bc2"], default: "bc7", scope: "format", quick: true },
+          { key: "dds_mipmaps", type: "boolean", control: "toggle", default: false, scope: "format", quick: false },
+        ]
+      : [];
+    return [...own, ...resize];
+  }
+  if (family === "video" && ["mp4", "mkv", "mov", "webm"].includes(id)) return [slider("quality", 90)];
+  return audioOptions[id] ?? [];
+};
+const withOptions = (family: string, descs: ReturnType<typeof rw>[]) =>
+  descs.map((d) => ({ ...d, options: d.can_write ? optionsFor(family, d.id) : [] }));
+
 const routes = (descs: { id: string; can_read: boolean; can_write: boolean }[]) => {
   const outs = descs.filter((d) => d.can_write).map((d) => d.id);
   return descs.filter((d) => d.can_read).map((d) => ({ input: d.id, outputs: outs.filter((o) => o !== d.id) }));
@@ -29,9 +63,9 @@ const routes = (descs: { id: string; can_read: boolean; can_write: boolean }[]) 
 
 const capabilities = {
   families: [
-    { family: "image", descriptors: imageDescriptors, routes: routes(imageDescriptors) },
-    { family: "audio", descriptors: audioDescriptors, routes: routes(audioDescriptors) },
-    { family: "video", descriptors: videoDescriptors, routes: routes(videoDescriptors) },
+    { family: "image", descriptors: withOptions("image", imageDescriptors), routes: routes(imageDescriptors) },
+    { family: "audio", descriptors: withOptions("audio", audioDescriptors), routes: routes(audioDescriptors) },
+    { family: "video", descriptors: withOptions("video", videoDescriptors), routes: routes(videoDescriptors) },
   ],
 };
 
@@ -121,7 +155,7 @@ export function installBrowserPreviewMock() {
         extraFolders = extraFolders.filter((p) => p !== (args as { path: string }).path);
         return null;
       case "quick_job_info":
-        return { name: "holiday-photo.png", source: "png", target: "webp", family: "image" };
+        return { name: "holiday-photo.png", source: "png", target: "jpg", family: "image", large_bytes: null, options: optionsFor("image", "jpg") };
       case "plugin:window|is_maximized":
         return false;
       // "Choose files" adds a sample video, which walks through the FFmpeg card.

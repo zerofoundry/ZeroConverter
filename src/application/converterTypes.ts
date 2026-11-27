@@ -1,11 +1,37 @@
 export type ResizeMode = "none" | "max_width" | "max_height" | "fit_box";
 
+/** null leaves the choice to the engine (keep the source's sample rate, ...). */
+export type OptionValue = number | string | boolean | null;
+
+/** One setting a target format honours, as the engine declares it. */
+export interface OptionSpecDto {
+  /** The request key (`quality`, `bitrate_kbps`). */
+  key: string;
+  type: "integer" | "string" | "boolean";
+  control: "slider" | "number" | "choice" | "toggle";
+  min?: number;
+  max?: number;
+  /** Number: values to offer as a list; the engine accepts any in range. */
+  presets?: number[];
+  /** Choice: the only values allowed. */
+  values?: OptionValue[];
+  default: OptionValue;
+  unit?: "kbps" | "hz" | "px" | string;
+  /** "family": one value for every target of the family; "format": one per target. */
+  scope: "family" | "format";
+  /** Also offered in the `+` window. */
+  quick: boolean;
+  show_when?: { key: string; values: string[] };
+}
+
 export interface FormatDescriptorDto {
   id: string;
   canonical_extension: string;
   aliases: string[];
   can_read: boolean;
   can_write: boolean;
+  /** What can be set when this format is the target (empty when read only). */
+  options?: OptionSpecDto[];
 }
 
 export interface ConversionRouteDto {
@@ -89,11 +115,9 @@ export interface JobRequestSnapshot {
   input_path: string;
   output_path: string;
   output_format: string;
-  quality: number;
   overwrite: boolean;
-  resize_mode: ResizeMode;
-  resize_width: number | null;
-  resize_height: number | null;
+  /** The format options the job ran with, keyed as the engine declares them. */
+  [option: string]: OptionValue | undefined;
 }
 
 export interface JobStatusDto {
@@ -119,18 +143,11 @@ export interface BatchItemRequest {
   input_path: string;
   output_folder: string | null;
   output_format: string;
-  quality: number;
   overwrite: boolean;
-  resize_mode: ResizeMode;
-  resize_width: number | null;
-  resize_height: number | null;
-  bitrate_kbps?: number | null;
-  sample_rate?: number | null;
-  channels?: number | null;
-  dds_format?: string | null;
-  dds_mipmaps?: boolean;
   /** The user agreed to convert a file over 100 MB. */
   confirm_large?: boolean;
+  /** Format options from `requestOptions`, sent as top-level fields. */
+  [option: string]: OptionValue | undefined;
 }
 
 export type JobEventDto =

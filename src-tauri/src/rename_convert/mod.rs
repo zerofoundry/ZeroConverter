@@ -126,6 +126,9 @@ pub struct QuickJobInfo {
     pub family: String,
     /// Over 100 MB: the window asks before converting.
     pub large_bytes: Option<u64>,
+    /// What the engine lets the user set for this target; the window shows
+    /// the ones marked `quick`.
+    pub options: Vec<&'static crate::core::conversion::options::OptionSpec>,
 }
 
 impl RenameConvert {
@@ -661,12 +664,19 @@ impl RenameConvert {
     pub fn quick_info(&self, id: &str) -> Option<QuickJobInfo> {
         let waiting = self.waiting.lock().unwrap();
         let job = waiting.get(id)?;
+        let family = self.registry.resolve_family(&job.source);
+        let options = self
+            .registry
+            .get_handler(&family)
+            .map(|handler| handler.output_options(&job.target))
+            .unwrap_or_default();
         Some(QuickJobInfo {
             name: job.original.file_name()?.to_string_lossy().into_owned(),
             source: job.source.clone(),
             target: job.target.clone(),
-            family: format!("{:?}", self.registry.resolve_family(&job.source)).to_lowercase(),
+            family: format!("{family:?}").to_lowercase(),
             large_bytes: large_input(&job.current),
+            options,
         })
     }
 

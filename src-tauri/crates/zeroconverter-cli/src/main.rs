@@ -18,10 +18,11 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use tokio_util::sync::CancellationToken;
 use zeroconverter_core::app_error::AppError;
+use zeroconverter_core::conversion::options::{Control, OptionSpec, OptionValue};
 use zeroconverter_core::conversion::output_naming::generate_output_path;
 use zeroconverter_core::conversion::pipeline::convert;
 use zeroconverter_core::conversion::registry::ConverterRegistry;
-use zeroconverter_core::conversion::traits::ExecContext;
+use zeroconverter_core::conversion::traits::{ConverterHandler, ExecContext};
 use zeroconverter_core::conversion::types::{AssetFamily, ConversionRequest, OutputFormat};
 use zeroconverter_core::jobs::types::OutputReservationAttempt;
 
@@ -288,6 +289,7 @@ fn capabilities(registry: &ConverterRegistry) -> Value {
                     "aliases": d.aliases,
                     "read": d.can_read,
                     "write": d.can_write,
+                    "options": handler.output_options(d.id),
                 })
             })
             .collect();
@@ -296,7 +298,7 @@ fn capabilities(registry: &ConverterRegistry) -> Value {
             .into_iter()
             .map(|c| json!({ "input": c.input.0, "outputs": c.outputs.into_iter().map(|o| o.0).collect::<Vec<_>>() }))
             .collect();
-        Some(json!({ "family": name, "formats": formats, "routes": routes, "options": family_options(name) }))
+        Some(json!({ "family": name, "formats": formats, "routes": routes, "options": family_options(handler.as_ref()) }))
     })
     .collect();
     json!({
@@ -324,28 +326,75 @@ fn capabilities(registry: &ConverterRegistry) -> Value {
     })
 }
 
-/// Keys accepted in `options`, per family. `formats` limits a key to those
-/// output formats; elsewhere it is ignored.
-fn family_options(family: &str) -> Value {
-    match family {
-        "image" => json!([
-            { "key": "quality", "type": "integer", "default": 90 },
-            { "key": "resize_mode", "type": "string", "values": ["none", "max_width", "max_height", "fit_box"], "default": "none" },
-            { "key": "resize_width", "type": "integer" },
-            { "key": "resize_height", "type": "integer" },
-            { "key": "dds_format", "type": "string", "values": ["bc1", "bc2", "bc3", "bc4", "bc5", "bc7"], "default": "bc7", "formats": ["dds"] },
-            { "key": "dds_mipmaps", "type": "boolean", "default": false, "formats": ["dds"] },
-        ]),
-        "audio" => json!([
-            { "key": "bitrate_kbps", "type": "integer", "formats": ["mp3", "opus"] },
-            { "key": "sample_rate", "type": "integer" },
-            { "key": "channels", "type": "integer", "values": [1], "note": "1 makes the output mono; otherwise the source's channels are kept" },
-        ]),
-        "video" => json!([
-            { "key": "quality", "type": "integer", "default": 90 },
-        ]),
-        _ => json!([]),
+/// Keys accepted in `options`, per family, summarised from what each
+/// writable format declares (`zeroconverter_core::conversion::options`).
+/// `formats` limits a key to those output formats; elsewhere it is ignored.
+/// `default`, `values`, `min` and `max` appear when every listed format
+/// agrees; each format's own entry in `formats[].options` has the full spec.
+fn family_options(handler: &dyn ConverterHandler) -> Value {
+    let targets: Vec<&str> = handler
+        .format_descriptors()
+        .iter()
+        .filter(|d| d.can_write)
+        .map(|d| d.id)
+        .collect();
+    let mut keys: Vec<&str> = Vec::new();
+    let mut by_key: Vec<Vec<&'static OptionSpec>> = Vec::new();
+    for target in &targets {
+        for spec in handler.output_options(target) {
+            match keys.iter().position(|k| *k == spec.key) {
+                Some(i) => by_key[i].push(spec),
+                None => {
+                    keys.push(spec.key);
+                    by_key.push(vec![spec]);
+                }
+            }
+        }
     }
+    let mut out = Vec::new();
+    for (i, key) in keys.iter().enumerate() {
+        let specs = &by_key[i];
+        let formats: Vec<&str> = targets
+            .iter()
+            .copied()
+            .filter(|t| handler.output_options(t).iter().any(|s| s.key == *key))
+            .collect();
+        let first = specs[0];
+        let bounds = |c: Control| match c {
+            Control::Slider { min, max } | Control::Number { min, max, .. } => Some((min, max)),
+            _ => None,
+        };
+        let mut entry = Map::new();
+        entry.insert("key".into(), json!(key));
+        entry.insert("type".into(), json!(first.json_type()));
+        if first.default != OptionValue::Unset && specs.iter().all(|s| s.default == first.default) {
+            entry.insert("default".into(), first.default.to_json());
+        }
+        if let Control::Choice { values } = first.control {
+            if specs.iter().all(|s| s.control == first.control) {
+                let listed: Vec<Value> = values
+                    .iter()
+                    .filter(|v| **v != OptionValue::Unset)
+                    .map(|v| v.to_json())
+                    .collect();
+                entry.insert("values".into(), json!(listed));
+            }
+        }
+        if let Some((min, max)) = bounds(first.control) {
+            if specs.iter().all(|s| bounds(s.control) == Some((min, max))) {
+                entry.insert("min".into(), json!(min));
+                entry.insert("max".into(), json!(max));
+            }
+        }
+        if formats.len() < targets.len() {
+            entry.insert("formats".into(), json!(formats));
+        }
+        if let Some(note) = first.note {
+            entry.insert("note".into(), json!(note));
+        }
+        out.push(Value::Object(entry));
+    }
+    Value::Array(out)
 }
 
 /// One input turned into a checked request with its planned output path.

@@ -5,7 +5,9 @@ import { ExternalLink, FolderOpen } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { FileTypeIcon } from "../common/FileTypeIcon";
 import { useThumbnail } from "../../application/thumbnailService";
-import { QUALITY_TARGETS } from "../../application/formatOptions";
+import { findFormatByExtension } from "../../application/formatCatalog.mjs";
+import { optionSpecsFor } from "../../application/outputOptions.mjs";
+import { optionLabel, valueLabel } from "../options/OptionFields";
 
 interface InspectorPanelProps {
   selectedJob?: JobStatusDto;
@@ -93,20 +95,26 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
     return dotIdx >= 0 ? name.substring(dotIdx + 1).toUpperCase() : null;
   }, [selectedJob]);
 
-  // Derive resize label
-  const resizeLabel = React.useMemo(() => {
-    if (!selectedJob) return null;
-    const { resize_mode, resize_width, resize_height } = selectedJob.request;
-    if (resize_mode === 'none') return null;
-    const modeLabels: Record<string, string> = {
-      max_width: t("rail.resizeMaxWidth"),
-      max_height: t("rail.resizeMaxHeight"),
-      fit_box: t("rail.resizeFitBox"),
-    };
-    const label = modeLabels[resize_mode] || resize_mode;
-    const dims = [resize_width, resize_height].filter(Boolean).join(' × ');
-    return dims ? t("inspector.resizeLabel", { mode: label, dims }) : label;
-  }, [selectedJob, t]);
+  // The options the job ran with, labelled the way the panel labels them.
+  // Only options the engine declares for that target, and only those in play
+  // (no width for "Original size").
+  const usedOptions = React.useMemo(() => {
+    if (!selectedJob) return [];
+    const request = selectedJob.request;
+    const family = jobInputExtension
+      ? findFormatByExtension(capabilities, jobInputExtension)?.family
+      : undefined;
+    if (!family) return [];
+    const specs = optionSpecsFor(capabilities, family, request.output_format);
+    return specs
+      .filter((spec) => request[spec.key] !== undefined)
+      .filter((spec) => !spec.show_when || spec.show_when.values.includes(String(request[spec.show_when.key])))
+      .map((spec) => ({
+        key: spec.key,
+        label: optionLabel(t, spec),
+        value: valueLabel(t, spec, request[spec.key] ?? null),
+      }));
+  }, [selectedJob, jobInputExtension, capabilities, t]);
 
   const fileName = selectedJob?.request.input_path.split(/[\\/]/).pop() || selectedPendingFile?.name;
   const inputSize = selectedPendingFile?.sizeBytes || selectedJob?.result?.input_integrity?.byte_size || 0;
@@ -212,10 +220,9 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
             {selectedJob && (
               <Section label={t("inspector.settingsUsed")}>
                 <MetaRow label={t("inspector.format")} value={selectedJob.request.output_format.toUpperCase()} />
-                {QUALITY_TARGETS.has(selectedJob.request.output_format) && (
-                  <MetaRow label={t("inspector.quality")} value={`${selectedJob.request.quality}%`} />
-                )}
-                {resizeLabel && <MetaRow label={t("inspector.resize")} value={resizeLabel} />}
+                {usedOptions.map((option) => (
+                  <MetaRow key={option.key} label={option.label} value={option.value} />
+                ))}
                 <MetaRow label={t("inspector.overwrite")} value={selectedJob.request.overwrite ? t("common.yes") : t("common.no")} />
               </Section>
             )}

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { renameGateway, type QuickJobInfo, type QuickOptions, type WatchedFolder } from "../platform/tauri/renameGateway";
 import { pickFolder } from "../platform/tauri/dialogGateway";
 import i18n from "../i18n";
+import { SettingsManager } from "./settingsStore";
 
 export type { QuickJobInfo, QuickOptions, WatchedFolder };
 
@@ -104,6 +105,6 @@ export const quickJob = {
   info: renameGateway.quickInfo,
   confirm: renameGateway.quickConfirm,
   cancel: renameGateway.quickCancel,
+  /** The options last chosen in the main window, so `+` starts from them. */
+  savedValues: () => SettingsManager.load().then((settings) => settings.optionValues),
 };
-
-export { QUALITY_TARGETS, BITRATES } from "./formatOptions";

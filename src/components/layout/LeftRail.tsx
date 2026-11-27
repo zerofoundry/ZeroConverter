@@ -1,17 +1,16 @@
 import React from "react";
-import { ResizeMode, PreflightResultDto } from "../../application/converterTypes";
+import { OptionSpecDto, OptionValue, PreflightResultDto } from "../../application/converterTypes";
 import { ArrowRight, ChevronLeft } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { FormatPicker } from "../common/FormatPicker";
-import {
-  AUDIO_TARGETS,
-  BITRATES,
-  DDS_FORMATS,
-  QUALITY_TARGETS,
-  SAMPLE_RATES,
-  bitrateFor,
-  type FormatOptions,
-} from "../../application/formatOptions";
+import { OptionFields } from "../options/OptionFields";
+import type { OptionValues } from "../../application/outputOptions.mjs";
+
+export interface OptionSection {
+  family: string;
+  target: string;
+  specs: OptionSpecDto[];
+}
 
 interface LeftRailProps {
   onAddFiles: () => void;
@@ -25,26 +24,19 @@ interface LeftRailProps {
   familyFormats: Record<string, string>;
   setFamilyFormat: (family: string, fmt: string) => void;
   familyFormatOptions: Record<string, string[]>;
-  quality: number;
-  setQuality: (val: number) => void;
-  familyQualities: Record<string, number>;
-  setFamilyQuality: (family: string, val: number) => void;
+  /** Per family being converted: its target and the options the engine declares. */
+  optionSections: OptionSection[];
+  optionValues: OptionValues;
+  setOptionValue: (family: string, target: string, spec: OptionSpecDto, value: OptionValue) => void;
+  applySuggestion: (action: string, family: string, target: string) => void;
   overwrite: boolean;
   setOverwrite: (val: boolean) => void;
-  resizeMode: ResizeMode;
-  setResizeMode: (mode: ResizeMode) => void;
-  resizeWidth: number | null;
-  setResizeWidth: (w: number | null) => void;
-  resizeHeight: number | null;
-  setResizeHeight: (h: number | null) => void;
   onSubmit: () => void;
   canSubmit: boolean;
   submitHint?: string | null;
   version: string;
   preflightResult: PreflightResultDto | null;
   outputDirectory: string | null;
-  formatOptions: FormatOptions;
-  setFormatOptions: (next: FormatOptions) => void;
   collapsed: boolean;
   onToggleCollapsed: () => void;
 }
@@ -61,26 +53,18 @@ export const LeftRail: React.FC<LeftRailProps> = ({
   familyFormats,
   setFamilyFormat,
   familyFormatOptions,
-  quality,
-  setQuality,
-  familyQualities,
-  setFamilyQuality,
+  optionSections,
+  optionValues,
+  setOptionValue,
+  applySuggestion,
   overwrite,
   setOverwrite,
-  resizeMode,
-  setResizeMode,
-  resizeWidth,
-  setResizeWidth,
-  resizeHeight,
-  setResizeHeight,
   onSubmit,
   canSubmit,
   submitHint,
   version: _version,
   preflightResult,
   outputDirectory: _outputDirectory,
-  formatOptions,
-  setFormatOptions,
   collapsed,
   onToggleCollapsed,
 }) => {
@@ -88,37 +72,7 @@ export const LeftRail: React.FC<LeftRailProps> = ({
   const isIcoTarget = isMixedBatch
     ? Object.entries(familyFormats).some(([fam, fmt]) => fam === "image" && fmt === "ico")
     : format === "ico";
-  // Resize and the image quality slider are for pictures only (not audio, not video).
-  const hasImages = detectedFamilies.includes("image") || detectedFamilies.length === 0;
-  const showResize = hasImages;
-  const imageTarget = isMixedBatch ? familyFormats.image : hasImages ? format : undefined;
-  const audioTarget = isMixedBatch ? familyFormats.audio : detectedFamilies.includes("audio") ? format : undefined;
-  const showQuality = !!imageTarget && QUALITY_TARGETS.has(imageTarget);
-  const showAudio = !!audioTarget && AUDIO_TARGETS.has(audioTarget);
-  const bitrate = audioTarget ? BITRATES[audioTarget] : undefined;
-  const showDds = imageTarget === "dds";
-  const patch = (next: Partial<FormatOptions>) => setFormatOptions({ ...formatOptions, ...next });
-  const field = "zc-field";
-
-  const qualityRow = (id: string, label: React.ReactNode, value: number, onChange: (v: number) => void) => (
-    <div key={id} className="space-y-1.5">
-      <div className="flex items-center justify-between">
-        <label htmlFor={id} className="type-control-label text-text-secondary">{label}</label>
-        <span className="text-[12px] tabular-nums text-text-primary">{value}</span>
-      </div>
-      <input
-        id={id}
-        type="range"
-        min="1"
-        max="100"
-        value={value}
-        disabled={isProcessing}
-        onChange={(e) => onChange(Number(e.target.value))}
-        className="zc-range w-full"
-        style={{ "--fill": `${value}%` } as React.CSSProperties}
-      />
-    </div>
-  );
+  const imageSection = optionSections.find((section) => section.family === "image");
 
   const convertLabel = isProcessing
     ? t("rail.converting")
@@ -207,145 +161,24 @@ export const LeftRail: React.FC<LeftRailProps> = ({
         <section className="space-y-3">
           <h3 className="zc-label">{t("rail.options")}</h3>
 
-          {showQuality &&
-            (isMixedBatch
-              ? qualityRow("quality-slider-image", t("rail.quality"), familyQualities.image ?? 80, (v) => setFamilyQuality("image", v))
-              : qualityRow("quality-slider", t("rail.quality"), quality, setQuality))}
-
-          {showDds && (
-            <div className="space-y-3">
-              <div className="space-y-1.5">
-                <label htmlFor="dds-format" className="type-control-label text-text-secondary">{t("rail.compression")}</label>
-                <select
-                  id="dds-format"
-                  disabled={isProcessing}
-                  value={formatOptions.ddsFormat}
-                  onChange={(e) => patch({ ddsFormat: e.target.value })}
-                  className={field}
-                >
-                  {DDS_FORMATS.map((f) => (
-                    <option key={f.id} value={f.id}>{t(`dds.${f.id}`, { name: f.id.toUpperCase() })}</option>
-                  ))}
-                </select>
-              </div>
-              <label className="flex cursor-pointer items-center gap-2.5 py-1">
-                <input
-                  type="checkbox"
-                  checked={formatOptions.ddsMipmaps}
-                  disabled={isProcessing}
-                  onChange={(e) => patch({ ddsMipmaps: e.target.checked })}
-                  className="zc-check"
-                />
-                <span className="type-control-label text-text-secondary">{t("rail.mipmaps")}</span>
-              </label>
-            </div>
-          )}
-
-          {showAudio && audioTarget && (
-            <div className="space-y-3">
-              {bitrate && (
-                <div className="space-y-1.5">
-                  <label htmlFor="audio-bitrate" className="type-control-label text-text-secondary">{t("rail.bitrate")}</label>
-                  <select
-                    id="audio-bitrate"
-                    disabled={isProcessing}
-                    value={bitrateFor(audioTarget, formatOptions) ?? bitrate.fallback}
-                    onChange={(e) =>
-                      patch({ bitrates: { ...formatOptions.bitrates, [audioTarget]: Number(e.target.value) } })
-                    }
-                    className={field}
-                  >
-                    {bitrate.choices.map((kbps) => (
-                      <option key={kbps} value={kbps}>{kbps} kbps</option>
-                    ))}
-                  </select>
-                </div>
+          {optionSections.map((section) => (
+            <div key={`${section.family}:${section.target}`} className="space-y-3">
+              {isMixedBatch && section.specs.length > 0 && (
+                <h4 className="zc-label">
+                  {t(`common.family.${section.family}`)} → {section.target.toUpperCase()}
+                </h4>
               )}
-              <div className="flex gap-2">
-                <div className="flex-1 space-y-1.5">
-                  <label htmlFor="audio-rate" className="type-control-label text-text-secondary">{t("rail.sampleRate")}</label>
-                  <select
-                    id="audio-rate"
-                    disabled={isProcessing}
-                    value={formatOptions.sampleRate ?? ""}
-                    onChange={(e) => patch({ sampleRate: e.target.value ? Number(e.target.value) : null })}
-                    className={field}
-                  >
-                    <option value="">{t("rail.original")}</option>
-                    {SAMPLE_RATES.map((hz) => (
-                      <option key={hz} value={hz}>{hz / 1000} kHz</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="flex-1 space-y-1.5">
-                  <label htmlFor="audio-channels" className="type-control-label text-text-secondary">{t("rail.channels")}</label>
-                  <select
-                    id="audio-channels"
-                    disabled={isProcessing}
-                    value={formatOptions.mono ? "mono" : "keep"}
-                    onChange={(e) => patch({ mono: e.target.value === "mono" })}
-                    className={field}
-                  >
-                    <option value="keep">{t("rail.original")}</option>
-                    <option value="mono">{t("rail.mono")}</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {showResize && (
-            <div className="space-y-1.5">
-              <label htmlFor="resize-mode" className="type-control-label text-text-secondary">{t("rail.resize")}</label>
-              <select
-                id="resize-mode"
+              <OptionFields
+                idPrefix={`opt-${section.family}`}
+                specs={section.specs}
+                values={optionValues}
+                family={section.family}
+                target={section.target}
+                onChange={(spec, value) => setOptionValue(section.family, section.target, spec, value)}
                 disabled={isProcessing}
-                value={resizeMode}
-                onChange={(e) => setResizeMode(e.target.value as ResizeMode)}
-                className={field}
-              >
-                <option value="none">{t("rail.resizeNone")}</option>
-                <option value="max_width">{t("rail.resizeMaxWidth")}</option>
-                <option value="max_height">{t("rail.resizeMaxHeight")}</option>
-                <option value="fit_box">{t("rail.resizeFitBox")}</option>
-              </select>
-
-              {resizeMode !== "none" && (
-                <div className="flex gap-2 pt-1">
-                  {(resizeMode === "max_width" || resizeMode === "fit_box") && (
-                    <input
-                      type="number"
-                      inputMode="numeric"
-                      autoComplete="off"
-                      min="1"
-                      max="16384"
-                      placeholder={t("rail.widthPlaceholder")}
-                      disabled={isProcessing}
-                      value={resizeWidth ?? ""}
-                      onChange={(e) => setResizeWidth(e.target.value ? Math.floor(Number(e.target.value)) : null)}
-                      aria-label={t("rail.widthLabel")}
-                      className={field}
-                    />
-                  )}
-                  {(resizeMode === "max_height" || resizeMode === "fit_box") && (
-                    <input
-                      type="number"
-                      inputMode="numeric"
-                      autoComplete="off"
-                      min="1"
-                      max="16384"
-                      placeholder={t("rail.heightPlaceholder")}
-                      disabled={isProcessing}
-                      value={resizeHeight ?? ""}
-                      onChange={(e) => setResizeHeight(e.target.value ? Math.floor(Number(e.target.value)) : null)}
-                      aria-label={t("rail.heightLabel")}
-                      className={field}
-                    />
-                  )}
-                </div>
-              )}
+              />
             </div>
-          )}
+          ))}
 
           <label
             className="flex cursor-pointer items-center gap-2.5 py-1"
@@ -365,14 +198,10 @@ export const LeftRail: React.FC<LeftRailProps> = ({
         {preflightResult && preflightResult.is_valid === false && preflightResult.severity === "error" && (
           <div className="rounded-card border border-warning-border bg-warning-soft p-3" role="alert">
             <p className="text-[12px] leading-snug text-warning">{preflightResult.message}</p>
-            {preflightResult.suggested_action === "FIT_BOX_256" && (
+            {preflightResult.suggested_action === "FIT_BOX_256" && imageSection && (
               <button
                 type="button"
-                onClick={() => {
-                  setResizeMode("fit_box");
-                  setResizeWidth(256);
-                  setResizeHeight(256);
-                }}
+                onClick={() => applySuggestion("FIT_BOX_256", imageSection.family, imageSection.target)}
                 className="zc-btn zc-btn-sm mt-2 border-warning-border text-warning hover:bg-warning-border/40"
               >
                 {t("rail.fitTo256")}

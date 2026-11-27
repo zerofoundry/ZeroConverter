@@ -20,6 +20,7 @@ pub static MODULE: ImageFormatModule = ImageFormatModule {
     dimensions,
     decode: Some(decode),
     encode: Some(encode),
+    options: &[],
 };
 
 fn sniff(header: &[u8]) -> bool {

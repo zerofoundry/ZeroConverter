@@ -40,23 +40,6 @@
     "familyOutputFormat": "صيغة إخراج {{family}}",
     "icoLimit": "يصل حجم ICO إلى 256×256 px كحدٍّ أقصى.",
     "options": "الخيارات",
-    "quality": "الجودة",
-    "compression": "الضغط",
-    "mipmaps": "إنشاء Mipmaps",
-    "bitrate": "معدل البت",
-    "sampleRate": "معدل العيّنة",
-    "channels": "القنوات",
-    "original": "كما هو",
-    "mono": "أحادي",
-    "resize": "تغيير الحجم",
-    "resizeNone": "الحجم الأصلي",
-    "resizeMaxWidth": "أقصى عرض",
-    "resizeMaxHeight": "أقصى ارتفاع",
-    "resizeFitBox": "احتواء داخل مربع",
-    "widthPlaceholder": "العرض px",
-    "heightPlaceholder": "الارتفاع px",
-    "widthLabel": "العرض المطلوب بالبكسل",
-    "heightLabel": "الارتفاع المطلوب بالبكسل",
     "overwrite": "استبدال الملفات الموجودة",
     "overwriteOn": "تُستبدل ملفات الإخراج الموجودة.",
     "overwriteOff": "تبقى الملفات الموجودة، وتحصل الملفات الجديدة على اسم فريد.",
@@ -70,13 +53,55 @@
     "convertCount_many": "تحويل {{count}} ملفًا",
     "convertCount_other": "تحويل {{count}} ملف"
   },
-  "dds": {
-    "bc7": "{{name}} · أفضل لون + ألفا",
-    "bc3": "{{name}} · لون + ألفا",
-    "bc1": "{{name}} · لون، الأصغر حجمًا",
-    "bc4": "{{name}} · قناة واحدة",
-    "bc5": "{{name}} · خرائط الوضع الطبيعي",
-    "bc2": "{{name}} · ألفا حادة (قديم)"
+  "option": {
+    "unset": "كما هو",
+    "quality": {
+      "label": "الجودة"
+    },
+    "resize_mode": {
+      "label": "تغيير الحجم",
+      "values": {
+        "none": "الحجم الأصلي",
+        "max_width": "أقصى عرض",
+        "max_height": "أقصى ارتفاع",
+        "fit_box": "احتواء داخل مربع"
+      }
+    },
+    "resize_width": {
+      "label": "العرض المطلوب بالبكسل",
+      "placeholder": "العرض px"
+    },
+    "resize_height": {
+      "label": "الارتفاع المطلوب بالبكسل",
+      "placeholder": "الارتفاع px"
+    },
+    "dds_format": {
+      "label": "الضغط",
+      "values": {
+        "bc7": "{{name}} · أفضل لون + ألفا",
+        "bc3": "{{name}} · لون + ألفا",
+        "bc1": "{{name}} · لون، الأصغر حجمًا",
+        "bc4": "{{name}} · قناة واحدة",
+        "bc5": "{{name}} · خرائط الوضع الطبيعي",
+        "bc2": "{{name}} · ألفا حادة (قديم)"
+      }
+    },
+    "dds_mipmaps": {
+      "label": "إنشاء Mipmaps"
+    },
+    "bitrate_kbps": {
+      "label": "معدل البت",
+      "unset": "تلقائي"
+    },
+    "sample_rate": {
+      "label": "معدل العيّنة"
+    },
+    "channels": {
+      "label": "القنوات",
+      "values": {
+        "1": "أحادي"
+      }
+    }
   },
   "picker": {
     "optionLabel": "صيغة الإخراج {{format}}",
@@ -197,8 +222,6 @@
     "mono": "أحادي",
     "stereo": "ستيريو",
     "settingsUsed": "الإعدادات المستخدمة",
-    "quality": "الجودة",
-    "resize": "تغيير الحجم",
     "overwrite": "الاستبدال",
     "result": "النتيجة",
     "open": "فتح",
@@ -215,7 +238,6 @@
     "reset": "إعادة تعيين",
     "resetTitle": "الحفظ بجوار كل ملف مصدر من جديد",
     "change": "تغيير…",
-    "resizeLabel": "{{mode}} ({{dims}})",
     "channelsCount_zero": "{{count}} قناة",
     "channelsCount_one": "قناة واحدة",
     "channelsCount_two": "قناتان",
@@ -237,8 +259,6 @@
   "quick": {
     "gone": "لم يعد هذا التحويل في الانتظار.",
     "largeFile": "حجم هذا الملف {{size}}. قد يستغرق تحويله وقتًا طويلًا ويشغل مساحة كبيرة من القرص.",
-    "quality": "الجودة",
-    "bitrate": "معدل البت",
     "longestSide": "أطول ضلع",
     "original": "كما هو",
     "cancel": "إلغاء",

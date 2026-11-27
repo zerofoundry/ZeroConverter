@@ -35,23 +35,6 @@
     "familyOutputFormat": "{{family}} 출력 형식",
     "icoLimit": "ICO는 최대 256×256 px까지 지원합니다.",
     "options": "옵션",
-    "quality": "품질",
-    "compression": "압축",
-    "mipmaps": "밉맵 생성",
-    "bitrate": "비트 전송률",
-    "sampleRate": "샘플링 레이트",
-    "channels": "채널",
-    "original": "원본 유지",
-    "mono": "모노",
-    "resize": "크기 조정",
-    "resizeNone": "원본 크기",
-    "resizeMaxWidth": "최대 너비",
-    "resizeMaxHeight": "최대 높이",
-    "resizeFitBox": "상자에 맞추기",
-    "widthPlaceholder": "너비 px",
-    "heightPlaceholder": "높이 px",
-    "widthLabel": "목표 너비(픽셀)",
-    "heightLabel": "목표 높이(픽셀)",
     "overwrite": "기존 파일 덮어쓰기",
     "overwriteOn": "기존 출력 파일을 바꿉니다.",
     "overwriteOff": "기존 파일은 그대로 두고, 새 출력에는 고유한 이름을 붙입니다.",
@@ -60,13 +43,55 @@
     "convert": "변환",
     "convertCount_other": "파일 {{count}}개 변환"
   },
-  "dds": {
-    "bc7": "{{name}} · 최고 화질 색상 + 알파",
-    "bc3": "{{name}} · 색상 + 알파",
-    "bc1": "{{name}} · 색상, 가장 작은 용량",
-    "bc4": "{{name}} · 단일 채널",
-    "bc5": "{{name}} · 노멀 맵",
-    "bc2": "{{name}} · 선명한 알파(구형)"
+  "option": {
+    "unset": "원본 유지",
+    "quality": {
+      "label": "품질"
+    },
+    "resize_mode": {
+      "label": "크기 조정",
+      "values": {
+        "none": "원본 크기",
+        "max_width": "최대 너비",
+        "max_height": "최대 높이",
+        "fit_box": "상자에 맞추기"
+      }
+    },
+    "resize_width": {
+      "label": "목표 너비(픽셀)",
+      "placeholder": "너비 px"
+    },
+    "resize_height": {
+      "label": "목표 높이(픽셀)",
+      "placeholder": "높이 px"
+    },
+    "dds_format": {
+      "label": "압축",
+      "values": {
+        "bc7": "{{name}} · 최고 화질 색상 + 알파",
+        "bc3": "{{name}} · 색상 + 알파",
+        "bc1": "{{name}} · 색상, 가장 작은 용량",
+        "bc4": "{{name}} · 단일 채널",
+        "bc5": "{{name}} · 노멀 맵",
+        "bc2": "{{name}} · 선명한 알파(구형)"
+      }
+    },
+    "dds_mipmaps": {
+      "label": "밉맵 생성"
+    },
+    "bitrate_kbps": {
+      "label": "비트 전송률",
+      "unset": "자동"
+    },
+    "sample_rate": {
+      "label": "샘플링 레이트"
+    },
+    "channels": {
+      "label": "채널",
+      "values": {
+        "1": "모노"
+      }
+    }
   },
   "picker": {
     "optionLabel": "출력 형식 {{format}}",
@@ -177,8 +202,6 @@
     "mono": "모노",
     "stereo": "스테레오",
     "settingsUsed": "사용한 설정",
-    "quality": "품질",
-    "resize": "크기 조정",
     "overwrite": "덮어쓰기",
     "result": "결과",
     "open": "열기",
@@ -195,7 +218,6 @@
     "reset": "초기화",
     "resetTitle": "다시 각 원본 파일 옆에 저장",
     "change": "변경…",
-    "resizeLabel": "{{mode}} ({{dims}})",
     "channelsCount_other": "{{count}}채널"
   },
   "video": {
@@ -212,8 +234,6 @@
   "quick": {
     "gone": "이 변환은 더 이상 대기 중이 아닙니다.",
     "largeFile": "이 파일은 {{size}}입니다. 변환에 시간이 오래 걸리고 디스크 공간을 많이 차지할 수 있습니다.",
-    "quality": "품질",
-    "bitrate": "비트 전송률",
     "longestSide": "긴 변",
     "original": "원본 유지",
     "cancel": "취소",

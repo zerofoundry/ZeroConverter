@@ -37,23 +37,6 @@
     "familyOutputFormat": "Format de sortie : {{family}}",
     "icoLimit": "L'ICO accepte jusqu'à 256×256 px.",
     "options": "Options",
-    "quality": "Qualité",
-    "compression": "Compression",
-    "mipmaps": "Générer les mipmaps",
-    "bitrate": "Débit",
-    "sampleRate": "Fréquence d'échantillonnage",
-    "channels": "Canaux",
-    "original": "Original",
-    "mono": "Mono",
-    "resize": "Redimensionner",
-    "resizeNone": "Taille d'origine",
-    "resizeMaxWidth": "Largeur max.",
-    "resizeMaxHeight": "Hauteur max.",
-    "resizeFitBox": "Ajuster dans un cadre",
-    "widthPlaceholder": "Largeur px",
-    "heightPlaceholder": "Hauteur px",
-    "widthLabel": "Largeur cible en pixels",
-    "heightLabel": "Hauteur cible en pixels",
     "overwrite": "Remplacer les fichiers existants",
     "overwriteOn": "Les fichiers de sortie existants sont remplacés.",
     "overwriteOff": "Les fichiers existants sont conservés ; les nouveaux reçoivent un nom unique.",
@@ -64,13 +47,55 @@
     "convertCount_many": "Convertir {{count}} de fichiers",
     "convertCount_other": "Convertir {{count}} fichiers"
   },
-  "dds": {
-    "bc7": "{{name}} · meilleure couleur + alpha",
-    "bc3": "{{name}} · couleur + alpha",
-    "bc1": "{{name}} · couleur, le plus léger",
-    "bc4": "{{name}} · un seul canal",
-    "bc5": "{{name}} · cartes de normales",
-    "bc2": "{{name}} · alpha net (ancien)"
+  "option": {
+    "unset": "Original",
+    "quality": {
+      "label": "Qualité"
+    },
+    "resize_mode": {
+      "label": "Redimensionner",
+      "values": {
+        "none": "Taille d'origine",
+        "max_width": "Largeur max.",
+        "max_height": "Hauteur max.",
+        "fit_box": "Ajuster dans un cadre"
+      }
+    },
+    "resize_width": {
+      "label": "Largeur cible en pixels",
+      "placeholder": "Largeur px"
+    },
+    "resize_height": {
+      "label": "Hauteur cible en pixels",
+      "placeholder": "Hauteur px"
+    },
+    "dds_format": {
+      "label": "Compression",
+      "values": {
+        "bc7": "{{name}} · meilleure couleur + alpha",
+        "bc3": "{{name}} · couleur + alpha",
+        "bc1": "{{name}} · couleur, le plus léger",
+        "bc4": "{{name}} · un seul canal",
+        "bc5": "{{name}} · cartes de normales",
+        "bc2": "{{name}} · alpha net (ancien)"
+      }
+    },
+    "dds_mipmaps": {
+      "label": "Générer les mipmaps"
+    },
+    "bitrate_kbps": {
+      "label": "Débit",
+      "unset": "Automatique"
+    },
+    "sample_rate": {
+      "label": "Fréquence d'échantillonnage"
+    },
+    "channels": {
+      "label": "Canaux",
+      "values": {
+        "1": "Mono"
+      }
+    }
   },
   "picker": {
     "optionLabel": "Format de sortie {{format}}",
@@ -185,8 +210,6 @@
     "mono": "Mono",
     "stereo": "Stéréo",
     "settingsUsed": "Réglages utilisés",
-    "quality": "Qualité",
-    "resize": "Redimensionnement",
     "overwrite": "Remplacement",
     "result": "Résultat",
     "open": "Ouvrir",
@@ -203,7 +226,6 @@
     "reset": "Réinitialiser",
     "resetTitle": "Enregistrer de nouveau à côté de chaque fichier source",
     "change": "Modifier…",
-    "resizeLabel": "{{mode}} ({{dims}})",
     "channelsCount_one": "{{count}} canal",
     "channelsCount_many": "{{count}} de canaux",
     "channelsCount_other": "{{count}} canaux"
@@ -222,8 +244,6 @@
   "quick": {
     "gone": "Cette conversion n'est plus en attente.",
     "largeFile": "Ce fichier pèse {{size}}. Le convertir peut être long et occuper beaucoup d'espace disque.",
-    "quality": "Qualité",
-    "bitrate": "Débit",
     "longestSide": "Plus grand côté",
     "original": "Original",
     "cancel": "Annuler",

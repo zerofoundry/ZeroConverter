@@ -78,7 +78,7 @@ Probing, validation, the queue, the command line, rename-to-convert, the right-c
 - **Recognising the file:** audio signatures are in `zeroconverter-core/src/sniff.rs`, in the hand-written part. Add yours with a test next to the others, or rename-to-convert and the menu will not offer the format.
 - **Tests:** a round trip through `AudioHandler` (see the existing format modules), a damaged file, and the options it accepts and refuses. The test in `formats/mod.rs` fails if a name is claimed twice.
 
-**An option** (a quality setting, a bitrate) is read and checked where it is used: `ImageOptions`, `AudioOptions::parse` or the video handler. Then set it in the UI. The API layer passes options through without listing them.
+**An option** (a quality setting, a bitrate) is read and checked where it is used: `ImageOptions`, `AudioOptions::parse` or the video handler. Then declare it: an `OptionSpec` (`conversion/options.rs`) in the format modules whose encoder honours it, with the same bounds and default as the check, and a label under `option.<key>` in every catalog in `src/i18n/locales/`. The app's panel, the `+` window and `zeroconverter capabilities` show it from there; the UI and the API layer never list options themselves. The family's `specs_agree_with_validation` test fails if the spec offers a value the check refuses. See [Options](docs/ARCHITECTURE.md#options).
 
 ## Trying the desktop app
 

@@ -35,23 +35,6 @@
     "familyOutputFormat": "{{family}}の出力形式",
     "icoLimit": "ICO は最大 256×256 px です。",
     "options": "オプション",
-    "quality": "品質",
-    "compression": "圧縮",
-    "mipmaps": "ミップマップを生成",
-    "bitrate": "ビットレート",
-    "sampleRate": "サンプルレート",
-    "channels": "チャンネル",
-    "original": "元のまま",
-    "mono": "モノラル",
-    "resize": "サイズ変更",
-    "resizeNone": "元のサイズ",
-    "resizeMaxWidth": "幅の上限",
-    "resizeMaxHeight": "高さの上限",
-    "resizeFitBox": "枠に収める",
-    "widthPlaceholder": "幅 px",
-    "heightPlaceholder": "高さ px",
-    "widthLabel": "変換後の幅（ピクセル）",
-    "heightLabel": "変換後の高さ（ピクセル）",
     "overwrite": "既存のファイルを上書き",
     "overwriteOn": "既存の出力ファイルは置き換えられます。",
     "overwriteOff": "既存のファイルは残り、新しい出力には重複しない名前が付きます。",
@@ -60,13 +43,55 @@
     "convert": "変換",
     "convertCount_other": "{{count}} 個のファイルを変換"
   },
-  "dds": {
-    "bc7": "{{name}} · 最高の色 + アルファ",
-    "bc3": "{{name}} · 色 + アルファ",
-    "bc1": "{{name}} · 色、最小サイズ",
-    "bc4": "{{name}} · 単一チャンネル",
-    "bc5": "{{name}} · 法線マップ",
-    "bc2": "{{name}} · くっきりしたアルファ（旧形式）"
+  "option": {
+    "unset": "元のまま",
+    "quality": {
+      "label": "品質"
+    },
+    "resize_mode": {
+      "label": "サイズ変更",
+      "values": {
+        "none": "元のサイズ",
+        "max_width": "幅の上限",
+        "max_height": "高さの上限",
+        "fit_box": "枠に収める"
+      }
+    },
+    "resize_width": {
+      "label": "変換後の幅（ピクセル）",
+      "placeholder": "幅 px"
+    },
+    "resize_height": {
+      "label": "変換後の高さ（ピクセル）",
+      "placeholder": "高さ px"
+    },
+    "dds_format": {
+      "label": "圧縮",
+      "values": {
+        "bc7": "{{name}} · 最高の色 + アルファ",
+        "bc3": "{{name}} · 色 + アルファ",
+        "bc1": "{{name}} · 色、最小サイズ",
+        "bc4": "{{name}} · 単一チャンネル",
+        "bc5": "{{name}} · 法線マップ",
+        "bc2": "{{name}} · くっきりしたアルファ（旧形式）"
+      }
+    },
+    "dds_mipmaps": {
+      "label": "ミップマップを生成"
+    },
+    "bitrate_kbps": {
+      "label": "ビットレート",
+      "unset": "自動"
+    },
+    "sample_rate": {
+      "label": "サンプルレート"
+    },
+    "channels": {
+      "label": "チャンネル",
+      "values": {
+        "1": "モノラル"
+      }
+    }
   },
   "picker": {
     "optionLabel": "出力形式 {{format}}",
@@ -177,8 +202,6 @@
     "mono": "モノラル",
     "stereo": "ステレオ",
     "settingsUsed": "使用した設定",
-    "quality": "品質",
-    "resize": "サイズ変更",
     "overwrite": "上書き",
     "result": "結果",
     "open": "開く",
@@ -195,7 +218,6 @@
     "reset": "リセット",
     "resetTitle": "元のファイルと同じ場所に保存する設定に戻す",
     "change": "変更…",
-    "resizeLabel": "{{mode}}（{{dims}}）",
     "channelsCount_other": "{{count}} チャンネル"
   },
   "video": {
@@ -212,8 +234,6 @@
   "quick": {
     "gone": "この変換はすでに待機していません。",
     "largeFile": "このファイルは {{size}} あります。変換には時間がかかり、ディスク容量を大きく消費することがあります。",
-    "quality": "品質",
-    "bitrate": "ビットレート",
     "longestSide": "長辺",
     "original": "元のまま",
     "cancel": "キャンセル",

@@ -21,6 +21,7 @@ pub const MODULE: AudioFormatModule = AudioFormatModule {
         can_write: cfg!(feature = "mp3"),
     },
     encoder: ENCODER,
+    options: &[&shape::MP3_BITRATE, &shape::SAMPLE_RATE, &shape::CHANNELS],
 };
 
 #[cfg(feature = "mp3")]

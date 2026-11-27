@@ -40,7 +40,7 @@ The boundaries are enforced: `npm run check:frontend-boundaries` for the fronten
 ## Common changes
 
 - **A new image or audio format:** one module and one line in `MODULES`. Follow [Adding a format](CONTRIBUTING.md#adding-a-format); `handlers/image/formats/qoi.rs` is the model. Nothing outside the family should need to change.
-- **A new option:** read and check it in the family that uses it (`ImageOptions`, `AudioOptions::parse`, the video handler), then set it in the UI. The API passes options through untouched.
+- **A new option:** read and check it in the family that uses it (`ImageOptions`, `AudioOptions::parse`, the video handler), then declare it with an `OptionSpec` on the formats that honour it and label it (`option.<key>`) in the catalogs. The panel, the `+` window and the CLI show it from the declaration; the UI never keeps its own list. The API passes options through untouched.
 - **A new family:** open an issue first. It touches the registry, capabilities and the UI, and the design should be agreed before code.
 - **Desktop behaviour (rename, menu, tray):** automated tests cannot reach Explorer. Run the steps in [docs/SMOKE_TEST.md](docs/SMOKE_TEST.md) that your change touches and list them in the pull request.
 

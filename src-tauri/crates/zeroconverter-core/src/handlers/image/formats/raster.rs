@@ -5,6 +5,7 @@
 use super::ImageFormatModule;
 use crate::app_error::AppError;
 use crate::conversion::types::FormatDescriptor;
+use crate::handlers::image::options;
 use crate::handlers::image::options::ImageOptions;
 use image::metadata::Orientation;
 use image::{DynamicImage, ImageDecoder, ImageFormat};
@@ -32,6 +33,7 @@ pub static PNG: ImageFormatModule = ImageFormatModule {
     dimensions: |p| dimensions(p, ImageFormat::Png),
     decode: Some(|p| decode(p, ImageFormat::Png)),
     encode: Some(|img, _| write(&float_to_int(img, true), ImageFormat::Png)),
+    options: &[],
 };
 
 pub static JPG: ImageFormatModule = ImageFormatModule {
@@ -40,6 +42,7 @@ pub static JPG: ImageFormatModule = ImageFormatModule {
     dimensions: |p| dimensions(p, ImageFormat::Jpeg),
     decode: Some(|p| decode(p, ImageFormat::Jpeg)),
     encode: Some(encode_jpg),
+    options: &[&options::QUALITY],
 };
 
 pub static WEBP: ImageFormatModule = ImageFormatModule {
@@ -48,6 +51,7 @@ pub static WEBP: ImageFormatModule = ImageFormatModule {
     dimensions: |p| dimensions(p, ImageFormat::WebP),
     decode: Some(|p| decode(p, ImageFormat::WebP)),
     encode: Some(|img, _| write(&float_to_int(img, false), ImageFormat::WebP)),
+    options: &[],
 };
 
 pub static BMP: ImageFormatModule = ImageFormatModule {
@@ -56,6 +60,7 @@ pub static BMP: ImageFormatModule = ImageFormatModule {
     dimensions: |p| dimensions(p, ImageFormat::Bmp),
     decode: Some(|p| decode(p, ImageFormat::Bmp)),
     encode: Some(|img, _| write(&float_to_int(img, false), ImageFormat::Bmp)),
+    options: &[],
 };
 
 pub static TIFF: ImageFormatModule = ImageFormatModule {
@@ -64,6 +69,7 @@ pub static TIFF: ImageFormatModule = ImageFormatModule {
     dimensions: |p| dimensions(p, ImageFormat::Tiff),
     decode: Some(|p| decode(p, ImageFormat::Tiff)),
     encode: Some(|img, _| write(&float_to_int(img, true), ImageFormat::Tiff)),
+    options: &[],
 };
 
 /// ICO: `00 00 01 00` and at least one image. Cursor files (`02 00`) and
@@ -82,6 +88,7 @@ pub static ICO: ImageFormatModule = ImageFormatModule {
         let rgba = DynamicImage::ImageRgba8(float_to_int(img, false).to_rgba8());
         write(&rgba, ImageFormat::Ico)
     }),
+    options: &[],
 };
 
 /// GIF is read only, and only a single frame (validation refuses animation).
@@ -91,6 +98,7 @@ pub static GIF: ImageFormatModule = ImageFormatModule {
     dimensions: |p| dimensions(p, ImageFormat::Gif),
     decode: Some(|p| decode(p, ImageFormat::Gif)),
     encode: None,
+    options: &[],
 };
 
 fn open(path: &Path) -> Result<BufReader<std::fs::File>, AppError> {

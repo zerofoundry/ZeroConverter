@@ -4,6 +4,7 @@
 use super::ImageFormatModule;
 use crate::app_error::AppError;
 use crate::conversion::types::FormatDescriptor;
+use crate::handlers::image::options;
 use crate::handlers::image::options::ImageOptions;
 use image::codecs::avif::AvifEncoder;
 use image::{DynamicImage, ExtendedColorType, ImageEncoder};
@@ -21,6 +22,7 @@ pub static MODULE: ImageFormatModule = ImageFormatModule {
     dimensions,
     decode: None,
     encode: Some(encode),
+    options: &[&options::QUALITY],
 };
 
 // A write-only module must NOT claim input signatures. The current

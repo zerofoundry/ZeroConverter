@@ -1,3 +1,4 @@
+use super::options::OptionSpec;
 use super::types::{
     ConversionCapability, ConversionRequest, ConversionResult, FormatDescriptor, InputFormat,
 };
@@ -52,6 +53,14 @@ pub trait ConverterHandler: Send + Sync {
     fn probe(&self, path: &Path) -> Result<InputFormat, AppError>;
 
     fn capabilities(&self) -> Vec<ConversionCapability>;
+
+    /// The options the encoder for `target` honours, in display order. A key
+    /// listed here must change the output when set; one that is not listed is
+    /// ignored for this target. See `conversion::options`.
+    fn output_options(&self, _target: &str) -> Vec<&'static OptionSpec> {
+        Vec::new()
+    }
+
     fn validate(&self, request: &ConversionRequest) -> Result<(), AppError>;
     fn execute(&self, request: &ConversionRequest) -> Result<ConversionResult, AppError>;
 

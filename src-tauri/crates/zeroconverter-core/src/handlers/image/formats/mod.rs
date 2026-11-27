@@ -18,6 +18,7 @@
 // ==============================================================================
 use super::options::ImageOptions;
 use crate::app_error::AppError;
+use crate::conversion::options::OptionSpec;
 use crate::conversion::types::FormatDescriptor;
 use image::DynamicImage;
 use std::path::Path;
@@ -53,6 +54,9 @@ pub struct ImageFormatModule {
     /// `Some` iff `descriptor.can_write`. Returns the complete output file bytes;
     /// the caller writes them atomically.
     pub encode: Option<EncodeFn>,
+    /// Options this format's encoder honours beyond resize, which every
+    /// writable image takes (`super::options`). Empty when there are none.
+    pub options: &'static [&'static OptionSpec],
 }
 
 /// Registration table, one module per line. Signatures are tried in this

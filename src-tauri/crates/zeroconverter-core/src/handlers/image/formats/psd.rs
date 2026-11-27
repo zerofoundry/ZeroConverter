@@ -23,6 +23,7 @@ pub static MODULE: ImageFormatModule = ImageFormatModule {
     dimensions,
     decode: Some(decode),
     encode: None,
+    options: &[],
 };
 
 const PSD_MAX_DIMENSION: u32 = 30_000;

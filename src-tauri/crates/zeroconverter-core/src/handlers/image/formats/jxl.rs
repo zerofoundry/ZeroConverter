@@ -20,6 +20,7 @@ pub static MODULE: ImageFormatModule = ImageFormatModule {
     dimensions,
     decode: Some(decode),
     encode: None,
+    options: &[],
 };
 
 // In addition to the 100 MP input policy, bound compressed input and the

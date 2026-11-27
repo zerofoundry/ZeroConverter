@@ -1,4 +1,6 @@
-use super::options::{compute_resize_target, ImageOptions, ResizeMode};
+use super::options::{
+    compute_resize_target, ImageOptions, ResizeMode, DDS_FORMATS, MAX_RESIZE_DIMENSION,
+};
 use crate::app_error::AppError;
 use crate::conversion::types::{find_descriptor, ConversionRequest, InputFormat};
 use std::path::Path;
@@ -38,7 +40,6 @@ pub(super) fn validate_static_gif(path: &Path) -> Result<(), AppError> {
     }
 }
 
-const MAX_RESIZE_DIMENSION: u32 = 16_384;
 const MAX_ICO_DIMENSION: u32 = 256;
 
 pub fn validate_image_conversion(
@@ -76,6 +77,19 @@ pub fn validate_image_conversion(
             "Quality must be between 1 and 100, got: {}",
             options.quality
         )));
+    }
+
+    if let Some(format) = options
+        .dds_format
+        .as_deref()
+        .filter(|_| output_format.eq_ignore_ascii_case("dds"))
+    {
+        if !DDS_FORMATS.iter().any(|f| f.eq_ignore_ascii_case(format)) {
+            return Err(AppError::Validate(format!(
+                "Unknown DDS compression \"{format}\"; use one of {}",
+                DDS_FORMATS.join(", ")
+            )));
+        }
     }
 
     let validate_dim = |dim: Option<u32>, name: &str| -> Result<(), AppError> {

@@ -1,43 +1,42 @@
 import { getSetting, setSetting } from '../platform/tauri/settingsGateway';
-import { ResizeMode } from './converterTypes';
-import { DEFAULT_FORMAT_OPTIONS, type FormatOptions } from './formatOptions';
+import { migrateLegacySettings, type OptionValues } from './outputOptions.mjs';
 
 export interface AppSettings {
   format: string;
-  quality: number;
   overwrite: boolean;
   outputDirectory: string | null;
   familyFormats: Record<string, string>;
-  familyQualities: Record<string, number>;
-  resizeMode: ResizeMode;
-  resizeWidth: number | null;
-  resizeHeight: number | null;
-  formatOptions: FormatOptions;
+  /** Format options the user chose, per scope (see outputOptions.mjs). */
+  optionValues: OptionValues;
 }
 
 const DEFAULT_SETTINGS: AppSettings = {
   format: "",
-  quality: 80,
   overwrite: false,
   outputDirectory: null,
   // Format preferences are populated only after loading core capabilities.
   familyFormats: {},
-  familyQualities: {},
-  resizeMode: "none",
-  resizeWidth: null,
-  resizeHeight: null,
-  formatOptions: DEFAULT_FORMAT_OPTIONS,
+  optionValues: {},
 };
+
+/** Fields of settings saved by 0.1.x that `optionValues` replaced. */
+const LEGACY_KEYS = ["quality", "familyQualities", "resizeMode", "resizeWidth", "resizeHeight", "formatOptions"];
+
+function withoutLegacy(saved: Record<string, unknown>): Partial<AppSettings> {
+  const rest = { ...saved };
+  for (const key of LEGACY_KEYS) delete rest[key];
+  return rest as Partial<AppSettings>;
+}
 
 export class SettingsManager {
   static async load(): Promise<AppSettings> {
     try {
-      const saved = await getSetting<AppSettings>('app_settings');
+      const saved = await getSetting<Record<string, unknown>>('app_settings');
       if (saved) {
         return {
           ...DEFAULT_SETTINGS,
-          ...saved,
-          formatOptions: { ...DEFAULT_FORMAT_OPTIONS, ...saved.formatOptions },
+          ...withoutLegacy(saved),
+          optionValues: migrateLegacySettings(saved),
         };
       }
     } catch (e) {

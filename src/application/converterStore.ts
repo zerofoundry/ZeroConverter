@@ -12,18 +12,15 @@
 //   The frontend sends user intent; the backend generates final output paths.
 // ==============================================================================
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
-import { DEFAULT_FORMAT_OPTIONS, formatFields, type FormatOptions } from './formatOptions';
+import { optionSpecsFor, requestOptions, withValue, type OptionValues } from './outputOptions.mjs';
 import i18n from "../i18n";
 import { confirmAction, pickInputFiles, pickOutputDirectory } from "../platform/tauri/dialogGateway";
 import { toAssetUrl } from "../platform/tauri/assetGateway";
 import { converterClient, VideoEngineDeclined } from "./converterClient";
-import { JobStatusDto, QueueSummaryDto, BatchItemRequest, JobEventDto, ResizeMode, PreflightResultDto, VideoEngineState } from "./converterTypes";
+import { JobStatusDto, QueueSummaryDto, BatchItemRequest, JobEventDto, OptionSpecDto, OptionValue, PreflightResultDto, VideoEngineState } from "./converterTypes";
 import { useAppCapabilities } from "./capabilitiesStore";
 import { SettingsManager } from "./settingsStore";
 import { availableOutputFormats, findFormatByExtension, pickSupportedFormat } from "./formatCatalog.mjs";
-
-/** Video re-encodes use the ZeroConverter standard; there is no slider for it. */
-const VIDEO_QUALITY = 90;
 
 export interface AppStatus {
   engine: string;
@@ -80,21 +77,19 @@ export function useBatchConverter() {
   const [pendingFiles, setPendingFiles] = useState<PendingFile[]>([]);
   const [selectedPendingId, setSelectedPendingId] = useState<string | null>(null);
 
+  // What the engine can read, write and set (formats, routes, options).
+  const { capabilities, getReadableExtensions } = useAppCapabilities();
+
   // 2. Global Batch Config
   const [format, setFormat] = useState("");
-  const [quality, setQuality] = useState(80);
   const [overwrite, setOverwrite] = useState(false);
-  const [formatOptions, setFormatOptions] = useState<FormatOptions>(DEFAULT_FORMAT_OPTIONS);
   const [outputDirectory, setOutputDirectory] = useState<string | null>(null);
-
-  // Resize State
-  const [resizeMode, setResizeMode] = useState<ResizeMode>("none");
-  const [resizeWidth, setResizeWidth] = useState<number | null>(null);
-  const [resizeHeight, setResizeHeight] = useState<number | null>(null);
+  // Format options (quality, resize, bitrate, ...): whatever the engine
+  // declares for the chosen target, remembered per scope.
+  const [optionValues, setOptionValues] = useState<OptionValues>({});
 
   // Per-family targets (for mixed batches)
   const [familyFormats, setFamilyFormats] = useState<Record<string, string>>({});
-  const [familyQualities, setFamilyQualities] = useState<Record<string, number>>({});
   const inFlightProbes = useRef<Set<string>>(new Set());
 
   // 3. Queue & Jobs State (Sync from Backend)
@@ -138,15 +133,10 @@ export function useBatchConverter() {
   useEffect(() => {
     SettingsManager.load().then(settings => {
       setFormat(settings.format);
-      setQuality(settings.quality);
       setOverwrite(settings.overwrite);
       setOutputDirectory(settings.outputDirectory);
       setFamilyFormats(settings.familyFormats);
-      setFamilyQualities(settings.familyQualities);
-      setResizeMode(settings.resizeMode);
-      setResizeWidth(settings.resizeWidth);
-      setResizeHeight(settings.resizeHeight);
-      setFormatOptions(settings.formatOptions);
+      setOptionValues(settings.optionValues);
       setIsSettingsLoaded(true);
     });
   }, []);
@@ -156,17 +146,12 @@ export function useBatchConverter() {
     if (!isSettingsLoaded) return;
     SettingsManager.save({
       format,
-      quality,
       overwrite,
       outputDirectory,
       familyFormats,
-      familyQualities,
-      resizeMode,
-      resizeWidth,
-      resizeHeight,
-      formatOptions,
+      optionValues,
     }).catch((e) => setError(i18n.t("error.settingsSave", { detail: String(e) })));
-  }, [format, quality, overwrite, outputDirectory, familyFormats, familyQualities, resizeMode, resizeWidth, resizeHeight, formatOptions, isSettingsLoaded]);
+  }, [format, overwrite, outputDirectory, familyFormats, optionValues, isSettingsLoaded]);
 
   // Detected families in current batch (excluding unknown)
   const detectedFamilies = useMemo(() => {
@@ -197,17 +182,13 @@ export function useBatchConverter() {
       return;
     }
 
-    const fileQuality = isMixedBatch ? (familyQualities[activeFile.kind] ?? quality) : quality;
+    const specs = optionSpecsFor(capabilities, activeFile.kind, fileFormat);
     const req: BatchItemRequest = {
+      ...requestOptions(specs, optionValues, activeFile.kind, fileFormat),
       input_path: activeFile.path,
       output_folder: outputDirectory || null,
       output_format: fileFormat,
-      quality: fileQuality,
       overwrite,
-      resize_mode: activeFile.kind === 'image' ? resizeMode : "none",
-      resize_width: activeFile.kind === 'image' ? resizeWidth : null,
-      resize_height: activeFile.kind === 'image' ? resizeHeight : null,
-      ...formatFields(activeFile.kind, fileFormat, formatOptions),
     };
 
     const token = ++preflightTokenRef.current;
@@ -226,7 +207,7 @@ export function useBatchConverter() {
     }, 300);
 
     return () => clearTimeout(timeout);
-  }, [pendingFiles, selectedPendingId, format, familyFormats, isMixedBatch, quality, familyQualities, overwrite, outputDirectory, resizeMode, resizeWidth, resizeHeight, formatOptions]);
+  }, [pendingFiles, selectedPendingId, format, familyFormats, isMixedBatch, overwrite, outputDirectory, optionValues, capabilities]);
 
   const handleJobEvent = useCallback((event: JobEventDto) => {
     switch (event.type) {
@@ -338,7 +319,6 @@ export function useBatchConverter() {
     })();
   }, [idlePathsKey]);
 
-  const { capabilities, getReadableExtensions } = useAppCapabilities();
 
   // Intake Actions
   const addFiles = useCallback(async (paths: string[]) => {
@@ -456,6 +436,19 @@ export function useBatchConverter() {
     return options;
   }, [capabilities, pendingFiles]);
 
+  /** What the options panel shows: per family in the batch, its target and
+   *  the options the engine declares for it. With no files yet, the first
+   *  family and the chosen format, so the panel is not empty. */
+  const optionSections = useMemo(() => {
+    if (!capabilities) return [];
+    const targets = isMixedBatch
+      ? detectedFamilies.map((family) => ({ family, target: familyFormats[family] ?? "" }))
+      : [{ family: detectedFamilies[0] ?? capabilities.families[0]?.family ?? "", target: format }];
+    return targets
+      .filter(({ family, target }) => family && target)
+      .map(({ family, target }) => ({ family, target, specs: optionSpecsFor(capabilities, family, target) }));
+  }, [capabilities, isMixedBatch, detectedFamilies, familyFormats, format]);
+
   // Persisted settings may name formats that no longer exist or have no route.
   // Reconcile after BOTH the backend capability load and persisted setting load.
   useEffect(() => {
@@ -538,24 +531,14 @@ export function useBatchConverter() {
           throw new Error(i18n.t("error.noRoute", { from: file.extension, to: fileFormat }));
         }
 
-        // Per-family quality resolution. Video has no quality control on
-        // screen, so it gets the standard, never a hidden image setting.
-        const fileQuality = file.kind === "video"
-          ? VIDEO_QUALITY
-          : isMixedBatch
-            ? (familyQualities[file.kind] ?? quality)
-            : quality;
-
+        // Only the options this target honours, as the engine declares them.
+        const specs = optionSpecsFor(capabilities, file.kind, fileFormat);
         return {
+          ...requestOptions(specs, optionValues, file.kind, fileFormat),
           input_path: file.path,
           output_folder: outputDirectory || null,
           output_format: fileFormat,
-          quality: fileQuality,
           overwrite,
-          resize_mode: file.kind === 'image' ? resizeMode : "none",
-          resize_width: file.kind === 'image' ? resizeWidth : null,
-          resize_height: file.kind === 'image' ? resizeHeight : null,
-          ...formatFields(file.kind, fileFormat, formatOptions),
           confirm_large: file.sizeBytes > LARGE_INPUT_BYTES,
         };
       });
@@ -584,7 +567,7 @@ export function useBatchConverter() {
       engineAnswerRef.current = null;
       setIsSubmitting(false);
     }
-  }, [pendingFiles, format, familyFormats, familyQualities, isMixedBatch, quality, overwrite, outputDirectory, resizeMode, resizeWidth, resizeHeight, formatOptions, syncQueue, clearAll, canSubmit, capabilities]);
+  }, [pendingFiles, format, familyFormats, isMixedBatch, overwrite, outputDirectory, optionValues, syncQueue, clearAll, canSubmit, capabilities]);
 
   const cancelJob = useCallback(async (jobId: string) => {
     try {
@@ -615,9 +598,20 @@ export function useBatchConverter() {
     setFamilyFormats(prev => ({ ...prev, [family]: fmt }));
   }, []);
 
-  const setFamilyQuality = useCallback((family: string, val: number) => {
-    setFamilyQualities(prev => ({ ...prev, [family]: val }));
+  /** Sets one option for converting `family` files to `target`. */
+  const setOptionValue = useCallback((family: string, target: string, spec: OptionSpecDto, value: OptionValue) => {
+    setOptionValues(prev => withValue(prev, spec, family, target, value));
   }, []);
+
+  /** The engine's own fix for a preflight warning, applied to the options. */
+  const applySuggestion = useCallback((action: string, family: string, target: string) => {
+    if (action !== "FIT_BOX_256") return;
+    const specs = optionSpecsFor(capabilities, family, target);
+    const set: Record<string, OptionValue> = { resize_mode: "fit_box", resize_width: 256, resize_height: 256 };
+    setOptionValues(prev => specs
+      .filter(spec => spec.key in set)
+      .reduce((acc, spec) => withValue(acc, spec, family, target, set[spec.key]), prev));
+  }, [capabilities]);
 
   return {
     pendingFiles,
@@ -628,17 +622,14 @@ export function useBatchConverter() {
     isMixedBatch,
     detectedFamilies,
     familyFormats,
-    familyQualities,
     familyFormatOptions,
     format,
-    quality,
     overwrite,
     outputDirectory,
-    resizeMode,
-    resizeWidth,
-    resizeHeight,
-    formatOptions,
-    setFormatOptions,
+    optionValues,
+    optionSections,
+    setOptionValue,
+    applySuggestion,
     jobs,
     queueSummary,
     error,
@@ -651,12 +642,7 @@ export function useBatchConverter() {
     setSelectedPendingId,
     setFormat,
     setFamilyFormat,
-    setFamilyQuality,
-    setQuality,
     setOverwrite,
-    setResizeMode,
-    setResizeWidth,
-    setResizeHeight,
     selectOutputDirectory,
     clearOutputDirectory,
     addFiles,

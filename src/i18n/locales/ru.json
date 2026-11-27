@@ -38,23 +38,6 @@
     "familyOutputFormat": "Выходной формат: {{family}}",
     "icoLimit": "ICO — не больше 256×256 px.",
     "options": "Параметры",
-    "quality": "Качество",
-    "compression": "Сжатие",
-    "mipmaps": "Создать мипмапы",
-    "bitrate": "Битрейт",
-    "sampleRate": "Частота дискретизации",
-    "channels": "Каналы",
-    "original": "Как в оригинале",
-    "mono": "Моно",
-    "resize": "Изменить размер",
-    "resizeNone": "Исходный размер",
-    "resizeMaxWidth": "Макс. ширина",
-    "resizeMaxHeight": "Макс. высота",
-    "resizeFitBox": "Вписать в рамку",
-    "widthPlaceholder": "Ширина, px",
-    "heightPlaceholder": "Высота, px",
-    "widthLabel": "Нужная ширина в пикселях",
-    "heightLabel": "Нужная высота в пикселях",
     "overwrite": "Перезаписывать существующие файлы",
     "overwriteOn": "Существующие файлы будут заменены.",
     "overwriteOff": "Существующие файлы останутся; новым дадим уникальное имя.",
@@ -66,13 +49,55 @@
     "convertCount_many": "Конвертировать {{count}} файлов",
     "convertCount_other": "Конвертировать {{count}} файла"
   },
-  "dds": {
-    "bc7": "{{name}} · лучший цвет + альфа",
-    "bc3": "{{name}} · цвет + альфа",
-    "bc1": "{{name}} · цвет, самый компактный",
-    "bc4": "{{name}} · один канал",
-    "bc5": "{{name}} · карты нормалей",
-    "bc2": "{{name}} · чёткая альфа (устар.)"
+  "option": {
+    "unset": "Как в оригинале",
+    "quality": {
+      "label": "Качество"
+    },
+    "resize_mode": {
+      "label": "Изменить размер",
+      "values": {
+        "none": "Исходный размер",
+        "max_width": "Макс. ширина",
+        "max_height": "Макс. высота",
+        "fit_box": "Вписать в рамку"
+      }
+    },
+    "resize_width": {
+      "label": "Нужная ширина в пикселях",
+      "placeholder": "Ширина, px"
+    },
+    "resize_height": {
+      "label": "Нужная высота в пикселях",
+      "placeholder": "Высота, px"
+    },
+    "dds_format": {
+      "label": "Сжатие",
+      "values": {
+        "bc7": "{{name}} · лучший цвет + альфа",
+        "bc3": "{{name}} · цвет + альфа",
+        "bc1": "{{name}} · цвет, самый компактный",
+        "bc4": "{{name}} · один канал",
+        "bc5": "{{name}} · карты нормалей",
+        "bc2": "{{name}} · чёткая альфа (устар.)"
+      }
+    },
+    "dds_mipmaps": {
+      "label": "Создать мипмапы"
+    },
+    "bitrate_kbps": {
+      "label": "Битрейт",
+      "unset": "Автоматически"
+    },
+    "sample_rate": {
+      "label": "Частота дискретизации"
+    },
+    "channels": {
+      "label": "Каналы",
+      "values": {
+        "1": "Моно"
+      }
+    }
   },
   "picker": {
     "optionLabel": "Выходной формат {{format}}",
@@ -189,8 +214,6 @@
     "mono": "Моно",
     "stereo": "Стерео",
     "settingsUsed": "Использованные настройки",
-    "quality": "Качество",
-    "resize": "Изменение размера",
     "overwrite": "Перезапись",
     "result": "Результат",
     "open": "Открыть",
@@ -207,7 +230,6 @@
     "reset": "Сбросить",
     "resetTitle": "Снова сохранять рядом с исходными файлами",
     "change": "Изменить…",
-    "resizeLabel": "{{mode}} ({{dims}})",
     "channelsCount_one": "{{count}} канал",
     "channelsCount_few": "{{count}} канала",
     "channelsCount_many": "{{count}} каналов",
@@ -227,8 +249,6 @@
   "quick": {
     "gone": "Эта конвертация больше не ожидает.",
     "largeFile": "Размер файла — {{size}}. Конвертация может занять много времени и места на диске.",
-    "quality": "Качество",
-    "bitrate": "Битрейт",
     "longestSide": "Длинная сторона",
     "original": "Как в оригинале",
     "cancel": "Отмена",

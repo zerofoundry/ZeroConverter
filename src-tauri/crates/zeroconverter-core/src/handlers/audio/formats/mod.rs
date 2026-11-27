@@ -10,6 +10,7 @@ pub mod opus;
 pub mod wav;
 
 use crate::app_error::AppError;
+use crate::conversion::options::OptionSpec;
 use crate::conversion::types::{ConversionResult, FormatDescriptor};
 use std::path::Path;
 
@@ -20,6 +21,8 @@ pub type AudioEncoder =
 pub struct AudioFormatModule {
     pub descriptor: FormatDescriptor,
     pub encoder: Option<AudioEncoder>,
+    /// Options this format's encoder honours (`super::shape`), in panel order.
+    pub options: &'static [&'static OptionSpec],
 }
 
 pub static MODULES: &[AudioFormatModule] = &[

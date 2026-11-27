@@ -21,6 +21,7 @@ pub const MODULE: AudioFormatModule = AudioFormatModule {
         can_write: true,
     },
     encoder: Some(encode),
+    options: &[&shape::OPUS_BITRATE, &shape::CHANNELS],
 };
 
 fn codec_error(error: impl std::fmt::Display) -> AppError {

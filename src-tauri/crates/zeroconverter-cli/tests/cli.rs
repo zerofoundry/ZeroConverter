@@ -60,6 +60,24 @@ fn capabilities_list_formats_and_routes() {
         .unwrap()
         .iter()
         .any(|o| o["key"] == "resize_mode"));
+    // Each writable format carries the full specs it honours; quality is
+    // offered where the encoder uses it, not on PNG.
+    let format = |id: &str| {
+        image["formats"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|f| f["id"] == id)
+            .unwrap()
+            .clone()
+    };
+    assert_eq!(format("jpg")["options"][0]["key"], "quality");
+    assert_eq!(format("jpg")["options"][0]["default"], 90);
+    assert!(format("png")["options"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .all(|o| o["key"] != "quality"));
     assert_eq!(caps["job_schemas"][0], "zeroconverter.job/v0");
     assert_eq!(caps["effects"]["network"], "none");
 }

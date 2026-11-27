@@ -54,7 +54,13 @@ A test in `registry.rs` checks that every readable extension belongs to exactly 
 
 ## Options
 
-Options are not typed out in the API layer. `ConversionSubmitDto` flattens every field it does not know into one JSON map, and the request carries it as-is. Each family reads and checks its own options (`ImageOptions`, `AudioOptions::parse`, video quality), and a bad value is a `Validate` error. Adding an option means reading it in the family that uses it and setting it in the UI; nothing in between changes.
+The engine declares what can be set for each target format, and every caller shows that list:
+
+- **Declared:** an `OptionSpec` (`core/conversion/options.rs`) names the request key, the control (slider, number with presets, choice, toggle), its bounds and the engine's own default, whether a chosen value is shared by the family (resize, sample rate) or kept per format (quality, bitrate), whether the `+` window offers it, and when it is in play (`show_when`: resize width only for "max width" and "fit inside box"). A format module lists the specs its encoder honours (`ImageFormatModule::options`, `AudioFormatModule::options`; video in `VideoHandler::output_options`), and `ConverterHandler::output_options(target)` returns them in display order. A key that is not listed is ignored for that target.
+- **Shown:** `get_app_capabilities` carries the specs on each writable descriptor (`options`), the `+` window gets them in `QuickJobInfo`, and `zeroconverter capabilities` reports them per format and summarised per family. In the app, `src/application/outputOptions.mjs` keeps the user's values (saved per scope in the settings) and builds each request from the specs; `components/options/OptionFields.tsx` draws any spec, labelled from `option.<key>` in the catalogs. The panel, the `+` window and the inspector have no list of formats or options of their own.
+- **Checked:** options are not typed out in the API layer. `ConversionSubmitDto` flattens every field it does not know into one JSON map, and the request carries it as-is. Each family reads and checks its own options (`ImageOptions`, `AudioOptions::parse`, video quality), and a bad value is a `Validate` error. A test next to each family (`specs_agree_with_validation`) keeps the two in step: every default, preset and choice a spec offers validates, and every value past its bounds is refused.
+
+Adding an option: read and check it in the family, add an `OptionSpec` to the formats that honour it, and give it a label (`option.<key>.label`) in every catalog. The panel, the `+` window, the inspector and the command line pick it up from there.
 
 ## Rename-to-convert
 

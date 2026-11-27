@@ -1,4 +1,5 @@
 import { transportInvoke } from "./ipc";
+import type { OptionSpecDto, OptionValue } from "../../application/converterTypes";
 
 export interface WatchedFolder {
   path: string;
@@ -23,15 +24,12 @@ export interface QuickJobInfo {
   family: string;
   /** Over 100 MB: converting waits for the user's go-ahead. */
   large_bytes: number | null;
+  /** What the engine lets the user set for this target. */
+  options: OptionSpecDto[];
 }
 
-export interface QuickOptions {
-  quality: number;
-  resize_mode: string;
-  resize_width: number | null;
-  resize_height: number | null;
-  bitrate_kbps?: number | null;
-}
+/** Format options keyed as the engine declares them; each family checks its own. */
+export type QuickOptions = Record<string, OptionValue>;
 
 export const renameGateway = {
   status: () => transportInvoke<RenameConvertStatus>("rename_convert_status"),

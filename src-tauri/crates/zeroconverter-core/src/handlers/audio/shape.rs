@@ -2,6 +2,7 @@
 //! downmix and sample-rate conversion. Streams packet by packet like `pcm`.
 use super::pcm::{self, AudioSpec};
 use crate::app_error::AppError;
+use crate::conversion::options::{Control, OptionSpec, OptionValue, Scope};
 use rubato::{FftFixedIn, Resampler};
 use serde::Deserialize;
 use std::path::Path;
@@ -55,6 +56,60 @@ impl AudioOptions {
         Ok(options)
     }
 }
+
+// ── What the panel offers ───────────────────────────────────────────────────
+// Attached to the formats whose encoder honours them (`formats/*.rs`, see
+// `conversion::options`). The bounds are the ones `AudioOptions::parse` checks.
+
+pub static SAMPLE_RATE: OptionSpec = OptionSpec {
+    key: "sample_rate",
+    control: Control::Number {
+        min: 8_000,
+        max: 192_000,
+        presets: &[44_100, 48_000],
+    },
+    default: OptionValue::Unset,
+    unit: Some("hz"),
+    scope: Scope::Family,
+    quick: false,
+    show_when: None,
+    note: Some("unset keeps the source's sample rate"),
+};
+
+pub static CHANNELS: OptionSpec = OptionSpec {
+    key: "channels",
+    control: Control::Choice {
+        values: &[OptionValue::Unset, OptionValue::Int(1)],
+    },
+    default: OptionValue::Unset,
+    unit: None,
+    scope: Scope::Family,
+    quick: false,
+    show_when: None,
+    note: Some("1 makes the output mono; otherwise the source's channels are kept"),
+};
+
+/// The bitrates the panel lists; `parse` accepts any value in range.
+const fn bitrate(presets: &'static [i64], default: OptionValue) -> OptionSpec {
+    OptionSpec {
+        key: "bitrate_kbps",
+        control: Control::Number {
+            min: 32,
+            max: 512,
+            presets,
+        },
+        default,
+        unit: Some("kbps"),
+        scope: Scope::Format,
+        quick: true,
+        show_when: None,
+        note: None,
+    }
+}
+
+pub static MP3_BITRATE: OptionSpec = bitrate(&[128, 192, 256, 320], OptionValue::Int(320));
+/// Unset: 64 kbps for mono, 128 for stereo.
+pub static OPUS_BITRATE: OptionSpec = bitrate(&[64, 96, 128, 192], OptionValue::Unset);
 
 /// The spec the encoder will receive for this source.
 pub fn output_spec(source: AudioSpec, options: &AudioOptions) -> AudioSpec {

@@ -3,6 +3,7 @@
 use super::ImageFormatModule;
 use crate::app_error::AppError;
 use crate::conversion::types::FormatDescriptor;
+use crate::handlers::image::options;
 use crate::handlers::image::options::ImageOptions;
 use dds::{
     header::Header, ColorFormat, CompressionQuality, Decoder, Encoder, Format, ImageView,
@@ -27,6 +28,7 @@ pub static MODULE: ImageFormatModule = ImageFormatModule {
     dimensions,
     decode: Some(decode),
     encode: Some(encode),
+    options: &[&options::DDS_FORMAT, &options::DDS_MIPMAPS],
 };
 
 fn sniff(h: &[u8]) -> bool {

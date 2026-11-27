@@ -51,6 +51,7 @@ pub fn build_capabilities_dto(
                     aliases: d.aliases.iter().map(|s| s.to_string()).collect(),
                     can_read: d.can_read,
                     can_write: d.can_write,
+                    options: handler.output_options(d.id),
                 })
                 .collect();
 
@@ -617,6 +618,23 @@ mod tests {
             .descriptors
             .iter()
             .any(|d| d.id == "gif" && d.can_read && !d.can_write));
+
+        // Options come from the engine: JPG offers quality first, SVG (read
+        // only) offers nothing.
+        let options_of = |id: &str| -> Vec<&str> {
+            image_family
+                .descriptors
+                .iter()
+                .find(|d| d.id == id)
+                .unwrap()
+                .options
+                .iter()
+                .map(|o| o.key)
+                .collect()
+        };
+        assert_eq!(options_of("jpg")[0], "quality");
+        assert!(options_of("png").contains(&"resize_mode"));
+        assert!(options_of("svg").is_empty());
 
         // SVG input route exists and routes to PNG, JPG, WebP, BMP, TIFF, ICO. Not SVG.
         let svg_route = image_family

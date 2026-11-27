@@ -50,7 +50,7 @@ zeroconverter run --job job.json
 | `inputs` | required | Files to convert. Relative paths are relative to the current directory. |
 | `format` | required | Output format id or extension, as listed by `capabilities`. |
 | `output_dir` | optional | Must exist. Default: next to each input. |
-| `options` | optional | Format options, the same ones the app uses: `quality` (1–100), `resize_mode` (`none`, `max_width`, `max_height`, `fit_box`), `resize_width`, `resize_height`, `bitrate_kbps`, `sample_rate`, `channels` (only 1, for mono), `dds_format`, `dds_mipmaps`. Each format family checks its own and rejects bad values. Unset: `quality` 90, `resize_mode` `none`. `capabilities` lists the keys per family and which formats use them. |
+| `options` | optional | Format options, the same ones the app uses: `quality` (1–100), `resize_mode` (`none`, `max_width`, `max_height`, `fit_box`), `resize_width`, `resize_height`, `bitrate_kbps`, `sample_rate`, `channels` (only 1, for mono), `dds_format`, `dds_mipmaps`. Each format family checks its own and rejects bad values. Unset: `quality` 90, `resize_mode` `none`. `capabilities` lists the keys per family and which formats use them, and each format's own `options` with its bounds and default. |
 | `overwrite` | optional | `true` replaces an existing output. Default `false`: a clash gets `name (1).ext`. The input itself is never overwritten. |
 | `confirm_large` | optional | Inputs over 100 MB convert only with `true`. |
 
@@ -58,7 +58,7 @@ Unknown top-level fields are an error, so a typo there does not silently do noth
 
 ## Output
 
-`version` reports the tool version, the git hash it was built from (`build`, or `"unknown"`), the interface version and the schema names. `capabilities` lists, per family, the formats, the routes and the option keys, plus the job schemas the tool accepts and its `effects` (network, files, child processes, environment), the same facts as the sections below.
+`version` reports the tool version, the git hash it was built from (`build`, or `"unknown"`), the interface version and the schema names. `capabilities` lists, per family, the formats, the routes and the option keys (with `formats` when only some outputs use a key, and `min`/`max`, `values` and `default` when they agree across them; each writable format's `options` has the full list it honours, in the order the app shows them), plus the job schemas the tool accepts and its `effects` (network, files, child processes, environment), the same facts as the sections below.
 
 `run` writes JSON lines. The set of events is fixed for v0:
 

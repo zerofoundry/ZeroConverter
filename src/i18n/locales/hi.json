@@ -36,23 +36,6 @@
     "familyOutputFormat": "{{family}} का आउटपुट फ़ॉर्मैट",
     "icoLimit": "ICO अधिकतम 256×256 px तक का हो सकता है।",
     "options": "विकल्प",
-    "quality": "गुणवत्ता",
-    "compression": "कंप्रेशन",
-    "mipmaps": "मिपमैप बनाएँ",
-    "bitrate": "बिटरेट",
-    "sampleRate": "सैंपल रेट",
-    "channels": "चैनल",
-    "original": "जैसा है वैसा",
-    "mono": "मोनो",
-    "resize": "आकार बदलें",
-    "resizeNone": "मूल आकार",
-    "resizeMaxWidth": "अधिकतम चौड़ाई",
-    "resizeMaxHeight": "अधिकतम ऊँचाई",
-    "resizeFitBox": "बॉक्स में समाएँ",
-    "widthPlaceholder": "चौड़ाई px",
-    "heightPlaceholder": "ऊँचाई px",
-    "widthLabel": "लक्ष्य चौड़ाई (पिक्सल में)",
-    "heightLabel": "लक्ष्य ऊँचाई (पिक्सल में)",
     "overwrite": "मौजूदा फ़ाइलें बदल दें",
     "overwriteOn": "मौजूदा आउटपुट बदल दिए जाते हैं।",
     "overwriteOff": "मौजूदा फ़ाइलें बनी रहती हैं; नए आउटपुट को अलग नाम मिलता है।",
@@ -62,13 +45,55 @@
     "convertCount_one": "{{count}} फ़ाइल बदलें",
     "convertCount_other": "{{count}} फ़ाइलें बदलें"
   },
-  "dds": {
-    "bc7": "{{name}} · सर्वश्रेष्ठ रंग + अल्फ़ा",
-    "bc3": "{{name}} · रंग + अल्फ़ा",
-    "bc1": "{{name}} · रंग, सबसे छोटा",
-    "bc4": "{{name}} · एक चैनल",
-    "bc5": "{{name}} · नॉर्मल मैप",
-    "bc2": "{{name}} · तीखा अल्फ़ा (पुराना)"
+  "option": {
+    "unset": "जैसा है वैसा",
+    "quality": {
+      "label": "गुणवत्ता"
+    },
+    "resize_mode": {
+      "label": "आकार बदलें",
+      "values": {
+        "none": "मूल आकार",
+        "max_width": "अधिकतम चौड़ाई",
+        "max_height": "अधिकतम ऊँचाई",
+        "fit_box": "बॉक्स में समाएँ"
+      }
+    },
+    "resize_width": {
+      "label": "लक्ष्य चौड़ाई (पिक्सल में)",
+      "placeholder": "चौड़ाई px"
+    },
+    "resize_height": {
+      "label": "लक्ष्य ऊँचाई (पिक्सल में)",
+      "placeholder": "ऊँचाई px"
+    },
+    "dds_format": {
+      "label": "कंप्रेशन",
+      "values": {
+        "bc7": "{{name}} · सर्वश्रेष्ठ रंग + अल्फ़ा",
+        "bc3": "{{name}} · रंग + अल्फ़ा",
+        "bc1": "{{name}} · रंग, सबसे छोटा",
+        "bc4": "{{name}} · एक चैनल",
+        "bc5": "{{name}} · नॉर्मल मैप",
+        "bc2": "{{name}} · तीखा अल्फ़ा (पुराना)"
+      }
+    },
+    "dds_mipmaps": {
+      "label": "मिपमैप बनाएँ"
+    },
+    "bitrate_kbps": {
+      "label": "बिटरेट",
+      "unset": "स्वचालित"
+    },
+    "sample_rate": {
+      "label": "सैंपल रेट"
+    },
+    "channels": {
+      "label": "चैनल",
+      "values": {
+        "1": "मोनो"
+      }
+    }
   },
   "picker": {
     "optionLabel": "आउटपुट फ़ॉर्मैट {{format}}",
@@ -181,8 +206,6 @@
     "mono": "मोनो",
     "stereo": "स्टीरियो",
     "settingsUsed": "इस्तेमाल की गई सेटिंग",
-    "quality": "गुणवत्ता",
-    "resize": "आकार बदलना",
     "overwrite": "ओवरराइट",
     "result": "नतीजा",
     "open": "खोलें",
@@ -199,7 +222,6 @@
     "reset": "रीसेट",
     "resetTitle": "फिर से हर स्रोत फ़ाइल के बगल में सहेजें",
     "change": "बदलें…",
-    "resizeLabel": "{{mode}} ({{dims}})",
     "channelsCount_one": "{{count}} चैनल",
     "channelsCount_other": "{{count}} चैनल"
   },
@@ -217,8 +239,6 @@
   "quick": {
     "gone": "यह कन्वर्ज़न अब प्रतीक्षा में नहीं है।",
     "largeFile": "यह फ़ाइल {{size}} की है। इसे बदलने में समय लग सकता है और डिस्क में काफ़ी जगह भर सकती है।",
-    "quality": "गुणवत्ता",
-    "bitrate": "बिटरेट",
     "longestSide": "सबसे लंबी भुजा",
     "original": "जैसा है वैसा",
     "cancel": "रद्द करें",

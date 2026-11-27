@@ -27,6 +27,9 @@ pub struct FormatDescriptorDto {
     pub aliases: Vec<String>,
     pub can_read: bool,
     pub can_write: bool,
+    /// What can be set when this format is the target, as the engine
+    /// declares it (`core::conversion::options`). Empty for read-only formats.
+    pub options: Vec<&'static crate::core::conversion::options::OptionSpec>,
 }
 
 #[derive(Serialize)]

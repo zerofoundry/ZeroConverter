@@ -13,4 +13,5 @@ pub const MODULE: AudioFormatModule = AudioFormatModule {
         can_write: false,
     },
     encoder: None,
+    options: &[],
 };

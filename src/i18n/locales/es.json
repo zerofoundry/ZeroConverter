@@ -37,23 +37,6 @@
     "familyOutputFormat": "Formato de salida de {{family}}",
     "icoLimit": "ICO admite hasta 256×256 px.",
     "options": "Opciones",
-    "quality": "Calidad",
-    "compression": "Compresión",
-    "mipmaps": "Generar mipmaps",
-    "bitrate": "Tasa de bits",
-    "sampleRate": "Frecuencia de muestreo",
-    "channels": "Canales",
-    "original": "Original",
-    "mono": "Mono",
-    "resize": "Redimensionar",
-    "resizeNone": "Tamaño original",
-    "resizeMaxWidth": "Ancho máximo",
-    "resizeMaxHeight": "Alto máximo",
-    "resizeFitBox": "Ajustar a un recuadro",
-    "widthPlaceholder": "Ancho px",
-    "heightPlaceholder": "Alto px",
-    "widthLabel": "Ancho de destino en píxeles",
-    "heightLabel": "Alto de destino en píxeles",
     "overwrite": "Sobrescribir archivos existentes",
     "overwriteOn": "Los archivos de salida existentes se reemplazan.",
     "overwriteOff": "Los archivos existentes se conservan; los nuevos reciben un nombre único.",
@@ -64,13 +47,55 @@
     "convertCount_many": "Convertir {{count}} de archivos",
     "convertCount_other": "Convertir {{count}} archivos"
   },
-  "dds": {
-    "bc7": "{{name}} · mejor color + alfa",
-    "bc3": "{{name}} · color + alfa",
-    "bc1": "{{name}} · color, el más pequeño",
-    "bc4": "{{name}} · un solo canal",
-    "bc5": "{{name}} · mapas de normales",
-    "bc2": "{{name}} · alfa nítido (antiguo)"
+  "option": {
+    "unset": "Original",
+    "quality": {
+      "label": "Calidad"
+    },
+    "resize_mode": {
+      "label": "Redimensionar",
+      "values": {
+        "none": "Tamaño original",
+        "max_width": "Ancho máximo",
+        "max_height": "Alto máximo",
+        "fit_box": "Ajustar a un recuadro"
+      }
+    },
+    "resize_width": {
+      "label": "Ancho de destino en píxeles",
+      "placeholder": "Ancho px"
+    },
+    "resize_height": {
+      "label": "Alto de destino en píxeles",
+      "placeholder": "Alto px"
+    },
+    "dds_format": {
+      "label": "Compresión",
+      "values": {
+        "bc7": "{{name}} · mejor color + alfa",
+        "bc3": "{{name}} · color + alfa",
+        "bc1": "{{name}} · color, el más pequeño",
+        "bc4": "{{name}} · un solo canal",
+        "bc5": "{{name}} · mapas de normales",
+        "bc2": "{{name}} · alfa nítido (antiguo)"
+      }
+    },
+    "dds_mipmaps": {
+      "label": "Generar mipmaps"
+    },
+    "bitrate_kbps": {
+      "label": "Tasa de bits",
+      "unset": "Automático"
+    },
+    "sample_rate": {
+      "label": "Frecuencia de muestreo"
+    },
+    "channels": {
+      "label": "Canales",
+      "values": {
+        "1": "Mono"
+      }
+    }
   },
   "picker": {
     "optionLabel": "Formato de salida {{format}}",
@@ -185,8 +210,6 @@
     "mono": "Mono",
     "stereo": "Estéreo",
     "settingsUsed": "Ajustes usados",
-    "quality": "Calidad",
-    "resize": "Redimensionar",
     "overwrite": "Sobrescribir",
     "result": "Resultado",
     "open": "Abrir",
@@ -203,7 +226,6 @@
     "reset": "Restablecer",
     "resetTitle": "Volver a guardar junto a cada archivo de origen",
     "change": "Cambiar…",
-    "resizeLabel": "{{mode}} ({{dims}})",
     "channelsCount_one": "{{count}} canal",
     "channelsCount_many": "{{count}} de canales",
     "channelsCount_other": "{{count}} canales"
@@ -222,8 +244,6 @@
   "quick": {
     "gone": "Esta conversión ya no está en espera.",
     "largeFile": "Este archivo pesa {{size}}. Convertirlo puede tardar y ocupar mucho espacio en disco.",
-    "quality": "Calidad",
-    "bitrate": "Tasa de bits",
     "longestSide": "Lado más largo",
     "original": "Original",
     "cancel": "Cancelar",
