@@ -44,6 +44,7 @@ The four notification sounds (`src-tauri/assets/notification-*.wav`) were genera
 | `image`, `pdf-writer`, `flac-codec` | Codec and PDF implementations | MIT OR Apache-2.0 |
 | `tauri`, Tauri plugins | Desktop framework | MIT OR Apache-2.0 |
 | `mp3lame-encoder`, `mp3lame-sys` | MP3 encoding | LGPL-3.0 |
+| `libwebp-sys` (libwebp, built from its bundled source) | Lossy WebP encoding | MIT (crate); libwebp BSD-3-Clause with Google's patent grant |
 
 This table lists the main dependencies, not every transitive one; `cargo license` in `src-tauri/` prints the full list for the locked versions. Preserve MPL notices and required source offers for any covered modified files. The complete [MPL-2.0 license text](licenses/MPL-2.0.txt) is included for reference; verify shipment of every license text applicable to the final bundle.
 

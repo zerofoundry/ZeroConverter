@@ -81,6 +81,13 @@
     "dds_mipmaps": {
       "label": "Mipmap oluştur"
     },
+    "webp_mode": {
+      "label": "Sıkıştırma",
+      "values": {
+        "lossless": "Kayıpsız · birebir",
+        "lossy": "Kayıplı · daha küçük"
+      }
+    },
     "bitrate_kbps": {
       "label": "Bit hızı",
       "unset": "Otomatik"
@@ -93,6 +100,9 @@
       "values": {
         "1": "Mono"
       }
+    },
+    "max_height": {
+      "label": "Çözünürlük"
     }
   },
   "picker": {

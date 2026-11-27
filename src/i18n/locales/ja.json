@@ -79,6 +79,13 @@
     "dds_mipmaps": {
       "label": "ミップマップを生成"
     },
+    "webp_mode": {
+      "label": "圧縮",
+      "values": {
+        "lossless": "ロスレス · 劣化なし",
+        "lossy": "非可逆 · 小さい"
+      }
+    },
     "bitrate_kbps": {
       "label": "ビットレート",
       "unset": "自動"
@@ -91,6 +98,9 @@
       "values": {
         "1": "モノラル"
       }
+    },
+    "max_height": {
+      "label": "解像度"
     }
   },
   "picker": {

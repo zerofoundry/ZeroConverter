@@ -83,6 +83,13 @@
     "dds_mipmaps": {
       "label": "Gerar mipmaps"
     },
+    "webp_mode": {
+      "label": "Compressão",
+      "values": {
+        "lossless": "Sem perdas · exato",
+        "lossy": "Com perdas · menor"
+      }
+    },
     "bitrate_kbps": {
       "label": "Taxa de bits",
       "unset": "Automático"
@@ -95,6 +102,9 @@
       "values": {
         "1": "Mono"
       }
+    },
+    "max_height": {
+      "label": "Resolução"
     }
   },
   "picker": {

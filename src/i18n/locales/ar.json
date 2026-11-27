@@ -89,6 +89,13 @@
     "dds_mipmaps": {
       "label": "إنشاء Mipmaps"
     },
+    "webp_mode": {
+      "label": "الضغط",
+      "values": {
+        "lossless": "بدون فقدان · مطابق",
+        "lossy": "مع فقدان · أصغر"
+      }
+    },
     "bitrate_kbps": {
       "label": "معدل البت",
       "unset": "تلقائي"
@@ -101,6 +108,9 @@
       "values": {
         "1": "أحادي"
       }
+    },
+    "max_height": {
+      "label": "الدقة"
     }
   },
   "picker": {

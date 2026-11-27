@@ -79,6 +79,13 @@
     "dds_mipmaps": {
       "label": "밉맵 생성"
     },
+    "webp_mode": {
+      "label": "압축",
+      "values": {
+        "lossless": "무손실 · 원본 그대로",
+        "lossy": "손실 · 더 작게"
+      }
+    },
     "bitrate_kbps": {
       "label": "비트 전송률",
       "unset": "자동"
@@ -91,6 +98,9 @@
       "values": {
         "1": "모노"
       }
+    },
+    "max_height": {
+      "label": "해상도"
     }
   },
   "picker": {

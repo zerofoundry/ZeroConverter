@@ -1,5 +1,6 @@
 use super::AudioFormatModule;
 use crate::conversion::types::FormatDescriptor;
+use crate::handlers::audio::shape;
 
 // ISO BMFF / MP4 audio container. Read with Symphonia; written as AAC by
 // FFmpeg (no pure-Rust AAC encoder), so it has no `encoder` here: see
@@ -13,5 +14,5 @@ pub const MODULE: AudioFormatModule = AudioFormatModule {
         can_write: true,
     },
     encoder: None,
-    options: &[],
+    options: &[&shape::AAC_BITRATE, &shape::SAMPLE_RATE, &shape::CHANNELS],
 };

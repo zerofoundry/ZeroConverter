@@ -81,6 +81,13 @@
     "dds_mipmaps": {
       "label": "मिपमैप बनाएँ"
     },
+    "webp_mode": {
+      "label": "कंप्रेशन",
+      "values": {
+        "lossless": "हानिरहित · हूबहू",
+        "lossy": "हानियुक्त · छोटी"
+      }
+    },
     "bitrate_kbps": {
       "label": "बिटरेट",
       "unset": "स्वचालित"
@@ -93,6 +100,9 @@
       "values": {
         "1": "मोनो"
       }
+    },
+    "max_height": {
+      "label": "रिज़ॉल्यूशन"
     }
   },
   "picker": {

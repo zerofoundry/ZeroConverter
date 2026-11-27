@@ -220,6 +220,28 @@ mod tests {
         assert_no_temp_workspace_debris(dir.path());
     }
 
+    /// The settings asked for reach FFmpeg: 64 kbps mono at 48 kHz.
+    #[test]
+    fn m4a_honours_bitrate_sample_rate_and_mono() {
+        if crate::handlers::video::ffmpeg::locate().is_none() {
+            return; // covered by the missing-FFmpeg case above
+        }
+        let input = create_test_wav(2, 44100, 1000);
+        let dir = tempfile::tempdir().unwrap();
+        let m4a = dir.path().join("song.m4a");
+        execute_audio(&make_request(
+            AssetFamily::Audio,
+            input.path(),
+            &m4a,
+            "m4a",
+            Some(serde_json::json!({ "bitrate_kbps": 64, "sample_rate": 48000, "channels": 1 })),
+        ))
+        .unwrap();
+        let spec = pcm::inspect(&m4a).unwrap();
+        assert_eq!((spec.channels, spec.sample_rate), (1, 48000));
+        assert_no_temp_workspace_debris(dir.path());
+    }
+
     #[test]
     fn execute_audio_converts_mono_wav_to_mp3_at_full_length() {
         // 1 s of mono. Fed to LAME as interleaved stereo it came out half as long.

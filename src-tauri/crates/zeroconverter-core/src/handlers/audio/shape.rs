@@ -110,6 +110,9 @@ const fn bitrate(presets: &'static [i64], default: OptionValue) -> OptionSpec {
 pub static MP3_BITRATE: OptionSpec = bitrate(&[128, 192, 256, 320], OptionValue::Int(320));
 /// Unset: 64 kbps for mono, 128 for stereo.
 pub static OPUS_BITRATE: OptionSpec = bitrate(&[64, 96, 128, 192], OptionValue::Unset);
+/// M4A and AAC, written by FFmpeg. Unset: AAC audio is copied as it is,
+/// anything else is encoded at 192 kbps (`video::plan::plan_audio_direct`).
+pub static AAC_BITRATE: OptionSpec = bitrate(&[128, 192, 256, 320], OptionValue::Unset);
 
 /// The spec the encoder will receive for this source.
 pub fn output_spec(source: AudioSpec, options: &AudioOptions) -> AudioSpec {

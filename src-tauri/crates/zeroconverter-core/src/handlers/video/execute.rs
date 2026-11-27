@@ -70,6 +70,15 @@ fn quality_of(request: &ConversionRequest) -> u8 {
         .map_or(90, |q| q.clamp(1, 100) as u8)
 }
 
+/// The `max_height` a request asks for (checked by `validate`).
+fn max_height_of(request: &ConversionRequest) -> Option<u32> {
+    request
+        .options
+        .get(super::MAX_HEIGHT.key)
+        .and_then(|h| h.as_u64())
+        .and_then(|h| u32::try_from(h).ok())
+}
+
 fn require_ffmpeg() -> Result<Ffmpeg, AppError> {
     ffmpeg::locate().ok_or_else(|| AppError::Execute(FFMPEG_MISSING.into()))
 }
@@ -99,6 +108,7 @@ pub fn execute_video(
             output,
             c,
             quality_of(request),
+            max_height_of(request),
             request.clobber(),
             ctx,
         ),
@@ -120,6 +130,7 @@ fn to_container(
     output: &Path,
     target: Container,
     quality: u8,
+    max_height: Option<u32>,
     clobber: zero_fs::Clobber,
     ctx: &ExecContext,
 ) -> Result<ConversionResult, AppError> {
@@ -129,7 +140,7 @@ fn to_container(
     let work = Workspace::next_to(output)?;
     let temporary = work.file("video.tmp");
 
-    let candidates: Vec<Option<&str>> = if plan::needs_h264(target, &info) {
+    let candidates: Vec<Option<&str>> = if plan::needs_h264(target, &info, max_height) {
         let found = ffmpeg::h264_candidates(&ff);
         if found.is_empty() {
             return Err(AppError::Execute(
@@ -144,7 +155,7 @@ fn to_container(
     let mut last_error = None;
     let mut chosen = None;
     for encoder in candidates {
-        let plan = plan::plan_container(target, &info, encoder, quality);
+        let plan = plan::plan_container(target, &info, encoder, quality, max_height);
         let mut args = plan.args.clone();
         args.extend(["-f".into(), target.muxer().into()]);
         let label = if plan.is_pure_copy() {
@@ -383,7 +394,7 @@ fn extract_audio(
     let work = Workspace::next_to(output)?;
     let temporary = work.file("audio.tmp");
 
-    if let Some(args) = plan::plan_audio_direct(target, &info) {
+    if let Some(args) = plan::plan_audio_direct(target, &info, options) {
         run::run(
             &Run {
                 ff: &ff,
@@ -405,7 +416,7 @@ fn extract_audio(
         ));
     }
 
-    let args = plan::plan_audio_wav(target, &info).ok_or_else(no_audio)?;
+    let args = plan::plan_audio_wav(target, &info, options).ok_or_else(no_audio)?;
     if target == AudioTarget::Wav {
         run::run(
             &Run {

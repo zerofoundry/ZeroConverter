@@ -85,6 +85,13 @@
     "dds_mipmaps": {
       "label": "Создать мипмапы"
     },
+    "webp_mode": {
+      "label": "Сжатие",
+      "values": {
+        "lossless": "Без потерь · точно",
+        "lossy": "С потерями · меньше"
+      }
+    },
     "bitrate_kbps": {
       "label": "Битрейт",
       "unset": "Автоматически"
@@ -97,6 +104,9 @@
       "values": {
         "1": "Моно"
       }
+    },
+    "max_height": {
+      "label": "Разрешение"
     }
   },
   "picker": {

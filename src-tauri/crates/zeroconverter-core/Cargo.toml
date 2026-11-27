@@ -31,6 +31,9 @@ hound = "3.5"
 flac-codec = { version = "1.3", default-features = false }
 mp3lame-encoder = { version = "0.2", optional = true }
 opus-pure = "=0.2.3"
+# Lossy WebP: libwebp (BSD-3-Clause, built from source by libwebp-sys). The
+# `image` crate only writes lossless WebP.
+libwebp-sys = { version = "=0.14.4", default-features = false, features = ["std"] }
 sha2 = "0.10"
 resvg = { version = "0.44", default-features = false }
 usvg = { version = "0.44", default-features = false }

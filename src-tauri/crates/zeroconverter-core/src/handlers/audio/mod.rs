@@ -64,7 +64,7 @@ impl ConverterHandler for AudioHandler {
 
     fn output_options(&self, target: &str) -> Vec<&'static OptionSpec> {
         formats::find(target)
-            .filter(|module| module.encoder.is_some())
+            .filter(|module| module.descriptor.can_write)
             .map_or_else(Vec::new, |module| module.options.to_vec())
     }
 
@@ -96,8 +96,8 @@ mod tests {
         for module in formats::MODULES {
             let target = module.descriptor.id;
             let specs = handler.output_options(target);
-            if module.encoder.is_none() {
-                assert!(specs.is_empty(), "{target} has no encoder to take options");
+            if !module.descriptor.can_write {
+                assert!(specs.is_empty(), "{target} is read only");
                 continue;
             }
             if target != "wav" {
@@ -123,6 +123,8 @@ mod tests {
         // Opus runs at 48 kHz whatever is asked, so it offers no sample rate.
         assert_eq!(keys("opus"), ["bitrate_kbps", "channels"]);
         assert!(keys("ogg").is_empty());
+        // FFmpeg writes M4A and AAC; it takes the same settings.
+        assert_eq!(keys("m4a"), ["bitrate_kbps", "sample_rate", "channels"]);
     }
 
     #[test]

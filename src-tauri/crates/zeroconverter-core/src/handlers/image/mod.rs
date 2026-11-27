@@ -138,6 +138,8 @@ mod tests {
         let keys =
             |t: &str| -> Vec<&str> { handler.output_options(t).iter().map(|s| s.key).collect() };
         assert_eq!(keys("jpg")[0], "quality");
+        // WebP: lossless unless asked, quality only when lossy.
+        assert_eq!(keys("webp")[..2], ["webp_mode", "quality"]);
         assert_eq!(keys("dds")[..2], ["dds_format", "dds_mipmaps"]);
         assert!(
             !keys("png").contains(&"quality"),

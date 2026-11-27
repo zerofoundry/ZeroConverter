@@ -34,6 +34,17 @@ pub struct ImageOptions {
     /// DDS only: write the full mip chain.
     #[serde(default)]
     pub dds_mipmaps: bool,
+    /// WebP only: `lossless` (unset) or `lossy` (at `quality`).
+    #[serde(default)]
+    pub webp_mode: Option<String>,
+}
+
+impl ImageOptions {
+    pub fn webp_lossy(&self) -> bool {
+        self.webp_mode
+            .as_deref()
+            .is_some_and(|m| m.eq_ignore_ascii_case("lossy"))
+    }
 }
 
 impl Default for ImageOptions {
@@ -46,6 +57,7 @@ impl Default for ImageOptions {
             resize_height: None,
             dds_format: None,
             dds_mipmaps: false,
+            webp_mode: None,
         }
     }
 }
@@ -155,6 +167,29 @@ pub static DDS_MIPMAPS: OptionSpec = OptionSpec {
     quick: false,
     show_when: None,
     note: None,
+};
+
+/// WebP: lossless by default, as before; lossy trades exactness for size.
+pub static WEBP_MODE: OptionSpec = OptionSpec {
+    key: "webp_mode",
+    control: Control::Choice {
+        values: &[OptionValue::Text("lossless"), OptionValue::Text("lossy")],
+    },
+    default: OptionValue::Text("lossless"),
+    unit: None,
+    scope: Scope::Format,
+    quick: true,
+    show_when: None,
+    note: Some("lossy uses quality"),
+};
+
+/// WebP quality, used only when lossy.
+pub static WEBP_QUALITY: OptionSpec = OptionSpec {
+    show_when: Some(ShowWhen {
+        key: "webp_mode",
+        values: &["lossy"],
+    }),
+    ..QUALITY
 };
 
 /// Largest width or height a resize may ask for.

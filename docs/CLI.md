@@ -50,7 +50,7 @@ zeroconverter run --job job.json
 | `inputs` | required | Files to convert. Relative paths are relative to the current directory. |
 | `format` | required | Output format id or extension, as listed by `capabilities`. |
 | `output_dir` | optional | Must exist. Default: next to each input. |
-| `options` | optional | Format options, the same ones the app uses: `quality` (1–100), `resize_mode` (`none`, `max_width`, `max_height`, `fit_box`), `resize_width`, `resize_height`, `bitrate_kbps`, `sample_rate`, `channels` (only 1, for mono), `dds_format`, `dds_mipmaps`. Each format family checks its own and rejects bad values. Unset: `quality` 90, `resize_mode` `none`. `capabilities` lists the keys per family and which formats use them, and each format's own `options` with its bounds and default. |
+| `options` | optional | Format options, the same ones the app uses: `quality` (1–100), `resize_mode` (`none`, `max_width`, `max_height`, `fit_box`), `resize_width`, `resize_height`, `bitrate_kbps`, `sample_rate`, `channels` (only 1, for mono), `dds_format`, `dds_mipmaps`, `webp_mode` (`lossless`, the default, or `lossy` at `quality`), `max_height` (video: scale a taller video down, 144–4320). Each format family checks its own and rejects bad values. Unset: `quality` 90, `resize_mode` `none`. `capabilities` lists the keys per family and which formats use them, and each format's own `options` with its bounds and default. |
 | `overwrite` | optional | `true` replaces an existing output. Default `false`: a clash gets `name (1).ext`. The input itself is never overwritten. |
 | `confirm_large` | optional | Inputs over 100 MB convert only with `true`. |
 

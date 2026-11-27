@@ -79,6 +79,13 @@
     "dds_mipmaps": {
       "label": "生成 Mipmap"
     },
+    "webp_mode": {
+      "label": "压缩",
+      "values": {
+        "lossless": "无损 · 完全一致",
+        "lossy": "有损 · 更小"
+      }
+    },
     "bitrate_kbps": {
       "label": "比特率",
       "unset": "自动"
@@ -91,6 +98,9 @@
       "values": {
         "1": "单声道"
       }
+    },
+    "max_height": {
+      "label": "分辨率"
     }
   },
   "picker": {

@@ -50,8 +50,8 @@ pub static WEBP: ImageFormatModule = ImageFormatModule {
     sniff: |h| h.len() >= 12 && h.starts_with(b"RIFF") && &h[8..12] == b"WEBP",
     dimensions: |p| dimensions(p, ImageFormat::WebP),
     decode: Some(|p| decode(p, ImageFormat::WebP)),
-    encode: Some(|img, _| write(&float_to_int(img, false), ImageFormat::WebP)),
-    options: &[],
+    encode: Some(encode_webp),
+    options: &[&options::WEBP_MODE, &options::WEBP_QUALITY],
 };
 
 pub static BMP: ImageFormatModule = ImageFormatModule {
@@ -175,6 +175,50 @@ fn write(img: &DynamicImage, format: ImageFormat) -> Result<Vec<u8>, AppError> {
     Ok(out.into_inner())
 }
 
+/// Lossless (the `image` crate) unless lossy is asked for, then libwebp at
+/// the requested quality.
+fn encode_webp(img: &DynamicImage, options: &ImageOptions) -> Result<Vec<u8>, AppError> {
+    if options.webp_lossy() {
+        encode_webp_lossy(&float_to_int(img, false), options.quality)
+    } else {
+        write(&float_to_int(img, false), ImageFormat::WebP)
+    }
+}
+
+/// Largest width or height a WebP file can hold.
+const WEBP_MAX_SIDE: u32 = 16_383;
+
+fn encode_webp_lossy(img: &DynamicImage, quality: u8) -> Result<Vec<u8>, AppError> {
+    use std::ffi::c_int;
+    let (width, height) = (img.width(), img.height());
+    if width == 0 || height == 0 || width > WEBP_MAX_SIDE || height > WEBP_MAX_SIDE {
+        return Err(AppError::Execute(format!(
+            "WebP holds at most {WEBP_MAX_SIDE} × {WEBP_MAX_SIDE} pixels; this image is {width} × {height}. Resize it first."
+        )));
+    }
+    let failed = || AppError::Execute("Failed to encode WebP output image".into());
+    let mut out: *mut u8 = std::ptr::null_mut();
+    let (w, h, q) = (width as c_int, height as c_int, f32::from(quality));
+    let size = if img.color().has_alpha() {
+        let pixels = img.to_rgba8();
+        // SAFETY: `pixels` holds `height` rows of `width * 4` bytes and
+        // outlives the call; libwebp allocates the output and sets `out`.
+        unsafe { libwebp_sys::WebPEncodeRGBA(pixels.as_ptr(), w, h, w * 4, q, &mut out) }
+    } else {
+        let pixels = img.to_rgb8();
+        // SAFETY: as above, with rows of `width * 3` bytes.
+        unsafe { libwebp_sys::WebPEncodeRGB(pixels.as_ptr(), w, h, w * 3, q, &mut out) }
+    };
+    if out.is_null() {
+        return Err(failed());
+    }
+    // SAFETY: libwebp wrote `size` bytes at `out`; they are copied, then the
+    // buffer goes back to libwebp's own allocator, once.
+    let bytes = (size > 0).then(|| unsafe { std::slice::from_raw_parts(out, size) }.to_vec());
+    unsafe { libwebp_sys::WebPFree(out.cast()) };
+    bytes.ok_or_else(failed)
+}
+
 fn encode_jpg(img: &DynamicImage, options: &ImageOptions) -> Result<Vec<u8>, AppError> {
     let img = float_to_int(img, false);
     let mut out = Cursor::new(Vec::new());
@@ -182,4 +226,81 @@ fn encode_jpg(img: &DynamicImage, options: &ImageOptions) -> Result<Vec<u8>, App
     img.write_with_encoder(encoder)
         .map_err(|e| AppError::Execute(format!("Failed to encode JPEG output image: {}", e)))?;
     Ok(out.into_inner())
+}
+
+#[cfg(test)]
+mod webp_tests {
+    use super::*;
+
+    /// A photo-like gradient with noise: lossy pays off on it.
+    fn photo(alpha: bool) -> DynamicImage {
+        let img = image::RgbaImage::from_fn(96, 64, |x, y| {
+            let n = ((x * 7919 + y * 104_729) % 23) as u8;
+            image::Rgba([
+                (x * 2) as u8 ^ n,
+                (y * 3) as u8,
+                ((x + y) as u8).wrapping_mul(3),
+                if alpha { (x * 2) as u8 } else { 255 },
+            ])
+        });
+        if alpha {
+            DynamicImage::ImageRgba8(img)
+        } else {
+            DynamicImage::ImageRgb8(DynamicImage::ImageRgba8(img).to_rgb8())
+        }
+    }
+
+    fn lossy(quality: u8) -> ImageOptions {
+        ImageOptions {
+            quality,
+            webp_mode: Some("lossy".into()),
+            ..ImageOptions::default()
+        }
+    }
+
+    fn decode_webp(bytes: &[u8]) -> DynamicImage {
+        image::load_from_memory_with_format(bytes, ImageFormat::WebP).expect("a readable WebP")
+    }
+
+    #[test]
+    fn webp_is_lossless_unless_lossy_is_asked_for() {
+        let source = photo(false);
+        // Quality alone does not make it lossy: the default stays exact.
+        let exact = encode_webp(
+            &source,
+            &ImageOptions {
+                quality: 10,
+                ..ImageOptions::default()
+            },
+        )
+        .unwrap();
+        assert_eq!(decode_webp(&exact).to_rgb8(), source.to_rgb8());
+        let small = encode_webp(&source, &lossy(90)).unwrap();
+        assert_ne!(decode_webp(&small).to_rgb8(), source.to_rgb8());
+    }
+
+    #[test]
+    fn webp_quality_changes_the_size_and_keeps_alpha() {
+        for alpha in [false, true] {
+            let source = photo(alpha);
+            let low = encode_webp(&source, &lossy(10)).unwrap();
+            let high = encode_webp(&source, &lossy(95)).unwrap();
+            assert!(
+                low.len() < high.len(),
+                "alpha={alpha}: {} vs {}",
+                low.len(),
+                high.len()
+            );
+            let back = decode_webp(&low);
+            assert_eq!((back.width(), back.height()), (96, 64));
+            assert_eq!(back.color().has_alpha(), alpha);
+        }
+    }
+
+    #[test]
+    fn lossy_webp_refuses_a_side_over_the_format_limit() {
+        let wide = DynamicImage::ImageRgb8(image::RgbImage::new(WEBP_MAX_SIDE + 1, 1));
+        let err = encode_webp(&wide, &lossy(80)).unwrap_err();
+        assert!(err.to_string().contains("16383"), "{err}");
+    }
 }

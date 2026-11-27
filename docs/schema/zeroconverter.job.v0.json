@@ -35,7 +35,9 @@
         "resize_height": { "type": "integer", "minimum": 1, "maximum": 16384 },
         "dds_format": { "type": "string" },
         "dds_mipmaps": { "type": "boolean" },
+        "webp_mode": { "description": "WebP: lossless (default) or lossy at `quality`.", "enum": ["lossless", "lossy"] },
         "bitrate_kbps": { "type": "integer", "minimum": 32, "maximum": 512 },
+        "max_height": { "description": "Video: scale a taller video down to this height; a smaller one is kept as it is.", "type": "integer", "minimum": 144, "maximum": 4320 },
         "sample_rate": { "type": "integer", "minimum": 8000, "maximum": 192000 },
         "channels": { "description": "1 makes the output mono; unset keeps the source's channels.", "const": 1 }
       }

@@ -92,6 +92,21 @@ pub fn validate_image_conversion(
         }
     }
 
+    if let Some(mode) = options
+        .webp_mode
+        .as_deref()
+        .filter(|_| output_format.eq_ignore_ascii_case("webp"))
+    {
+        if !["lossless", "lossy"]
+            .iter()
+            .any(|m| m.eq_ignore_ascii_case(mode))
+        {
+            return Err(AppError::Validate(format!(
+                "Unknown WebP mode \"{mode}\"; use lossless or lossy"
+            )));
+        }
+    }
+
     let validate_dim = |dim: Option<u32>, name: &str| -> Result<(), AppError> {
         let val = dim.ok_or_else(|| {
             AppError::Validate(format!("{} is required for this resize mode", name))

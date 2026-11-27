@@ -3,6 +3,7 @@
 //! no process is started here, so every rule is unit-tested.
 use super::formats::{AudioTarget, Container};
 use super::media::{Kind, MediaInfo, Stream};
+use crate::handlers::audio::shape::AudioOptions;
 
 pub const VP9: &str = "libvpx-vp9";
 
@@ -67,13 +68,21 @@ fn sub_action(c: Container, codec: &str) -> SubAction {
     }
 }
 
-/// True when the primary video stream cannot be copied into `target`, so an
-/// H.264 encoder must be found. (WebM uses VP9, which is always `libvpx`.)
-pub fn needs_h264(target: Container, media: &MediaInfo) -> bool {
+/// The height to scale the video down to: `max_height` rounded down to an
+/// even number, when the video (as displayed) is taller. Never scales up.
+pub fn shrink_to(v: &Stream, max_height: Option<u32>) -> Option<u32> {
+    let (_, h) = v.display_size();
+    max_height.map(|m| m - m % 2).filter(|m| *m > 0 && h > *m)
+}
+
+/// True when the primary video stream cannot be copied into `target` (or
+/// must be scaled down), so an H.264 encoder must be found. (WebM uses VP9,
+/// which is always `libvpx`.)
+pub fn needs_h264(target: Container, media: &MediaInfo, max_height: Option<u32>) -> bool {
     target != Container::Webm
         && media
             .primary_video()
-            .is_some_and(|v| !video_fits(target, &v.codec))
+            .is_some_and(|v| !video_fits(target, &v.codec) || shrink_to(v, max_height).is_some())
 }
 
 #[derive(Debug, Default)]
@@ -95,8 +104,12 @@ impl ContainerPlan {
 
 /// Target bitrate for a hardware/MF/OpenH264 encode, which have no CRF mode.
 /// Bits per pixel per frame scales with quality, capped at the source bitrate.
-pub fn h264_bitrate(v: &Stream, media: &MediaInfo, quality: u8) -> u64 {
-    let (w, h) = v.display_size();
+/// `height`: the output height when the video is scaled down.
+pub fn h264_bitrate(v: &Stream, media: &MediaInfo, quality: u8, height: Option<u32>) -> u64 {
+    let (w, h) = match (v.display_size(), height) {
+        ((w, h), Some(to)) if h > 0 => ((u64::from(w) * u64::from(to) / u64::from(h)) as u32, to),
+        (size, _) => size,
+    };
     let q = f64::from(quality.clamp(1, 100)) / 100.0;
     let bpp = 0.03 + 0.10 * q;
     let fps = v.fps.unwrap_or(30.0).clamp(1.0, 120.0);
@@ -161,12 +174,14 @@ fn vp9_args(out: usize, quality: u8) -> Vec<String> {
 }
 
 /// `h264_encoder` is the encoder to use if the video must be re-encoded for
-/// MP4/MOV/MKV (ignored otherwise).
+/// MP4/MOV/MKV (ignored otherwise). `max_height` scales a taller video down,
+/// which means a re-encode even where the stream could be copied.
 pub fn plan_container(
     target: Container,
     media: &MediaInfo,
     h264_encoder: Option<&str>,
     quality: u8,
+    max_height: Option<u32>,
 ) -> ContainerPlan {
     let mut plan = ContainerPlan::default();
     let mut maps: Vec<String> = Vec::new();
@@ -175,7 +190,8 @@ pub fn plan_container(
     // ── video: first real video stream only (cover art and extras are dropped)
     if let Some(v) = media.primary_video() {
         maps.extend(["-map".into(), format!("0:{}", v.index)]);
-        if video_fits(target, &v.codec) {
+        let shrink = shrink_to(v, max_height);
+        if video_fits(target, &v.codec) && shrink.is_none() {
             codec_args.extend(["-c:v:0".into(), "copy".into()]);
             if v.codec == "hevc" && matches!(target, Container::Mp4 | Container::Mov) {
                 codec_args.extend(["-tag:v:0".into(), "hvc1".into()]);
@@ -185,11 +201,14 @@ pub fn plan_container(
             plan.video_encoder = Some(VP9.into());
         } else {
             let enc = h264_encoder.unwrap_or("h264_mf");
-            codec_args.extend(h264_args(enc, 0, h264_bitrate(v, media, quality)));
+            codec_args.extend(h264_args(enc, 0, h264_bitrate(v, media, quality, shrink)));
             plan.video_encoder = Some(enc.to_string());
         }
         let (dw, dh) = v.display_size();
-        if plan.video_encoder.is_some() && (dw % 2 == 1 || dh % 2 == 1) {
+        if let Some(to) = shrink {
+            // -2: the width that keeps the aspect ratio, rounded to even.
+            codec_args.extend(["-filter:v:0".into(), format!("scale=-2:{to}")]);
+        } else if plan.video_encoder.is_some() && (dw % 2 == 1 || dh % 2 == 1) {
             codec_args.extend([
                 "-filter:v:0".into(),
                 "scale=trunc(iw/2)*2:trunc(ih/2)*2".into(),
@@ -260,12 +279,35 @@ pub fn plan_container(
     plan
 }
 
-/// Output-side arguments for pulling the audio out of a video. `None` means
-/// "decode to PCM and let the pure-Rust audio encoder finish" (the caller
-/// writes a temporary WAV).
-pub fn plan_audio_direct(target: AudioTarget, media: &MediaInfo) -> Option<Vec<String>> {
+/// `-ar` and `-ac 1` for the sample rate and mono asked for, if any.
+fn audio_shape_args(options: &AudioOptions) -> Vec<String> {
+    let mut a = Vec::new();
+    if let Some(rate) = options.sample_rate {
+        a.extend(["-ar".to_owned(), rate.to_string()]);
+    }
+    if options.channels == Some(1) {
+        a.extend(["-ac", "1"].map(String::from));
+    }
+    a
+}
+
+/// AAC bitrate when nothing is asked for and the audio has to be encoded.
+pub const AAC_DEFAULT_KBPS: u32 = 192;
+
+/// Output-side arguments for audio FFmpeg writes itself (M4A, AAC). `None`
+/// means "decode to PCM and let the pure-Rust audio encoder finish" (the
+/// caller writes a temporary WAV). AAC audio is copied as it is unless a
+/// bitrate, sample rate or mono is asked for.
+pub fn plan_audio_direct(
+    target: AudioTarget,
+    media: &MediaInfo,
+    options: &AudioOptions,
+) -> Option<Vec<String>> {
     let first = media.of(Kind::Audio).next()?;
-    let copy = first.codec == "aac";
+    let reshape = options.bitrate_kbps.is_some()
+        || options.sample_rate.is_some()
+        || options.channels.is_some();
+    let copy = first.codec == "aac" && !reshape;
     let mut a: Vec<String> = ["-vn", "-sn", "-dn", "-map"].map(String::from).to_vec();
     a.push(format!("0:{}", first.index));
     match target {
@@ -273,7 +315,14 @@ pub fn plan_audio_direct(target: AudioTarget, media: &MediaInfo) -> Option<Vec<S
             if copy {
                 a.extend(["-c:a", "copy"].map(String::from));
             } else {
-                a.extend(["-c:a", "aac", "-b:a", "192k"].map(String::from));
+                let kbps = options.bitrate_kbps.unwrap_or(AAC_DEFAULT_KBPS);
+                a.extend([
+                    "-c:a".to_owned(),
+                    "aac".to_owned(),
+                    "-b:a".to_owned(),
+                    format!("{kbps}k"),
+                ]);
+                a.extend(audio_shape_args(options));
             }
             a.extend(
                 [
@@ -294,8 +343,14 @@ pub fn plan_audio_direct(target: AudioTarget, media: &MediaInfo) -> Option<Vec<S
 
 /// Arguments for decoding the first audio track to a PCM WAV, the input of
 /// the existing audio encoders (and WAV itself): 16-bit, or 24-bit for a
-/// lossless target when the source is deeper than 16 bits.
-pub fn plan_audio_wav(target: AudioTarget, media: &MediaInfo) -> Option<Vec<String>> {
+/// lossless target when the source is deeper than 16 bits. When WAV is the
+/// target, the sample rate and mono asked for are applied here; the other
+/// targets apply them in their encoder.
+pub fn plan_audio_wav(
+    target: AudioTarget,
+    media: &MediaInfo,
+    options: &AudioOptions,
+) -> Option<Vec<String>> {
     let first = media.of(Kind::Audio).next()?;
     let mut a: Vec<String> = ["-vn", "-sn", "-dn", "-map"].map(String::from).to_vec();
     a.push(format!("0:{}", first.index));
@@ -306,6 +361,9 @@ pub fn plan_audio_wav(target: AudioTarget, media: &MediaInfo) -> Option<Vec<Stri
     // The pure-Rust Opus encoder has no resampler: it needs 48 kHz input.
     if target == AudioTarget::Opus {
         a.extend(["-ar", "48000"].map(String::from));
+    }
+    if target == AudioTarget::Wav {
+        a.extend(audio_shape_args(options));
     }
     let lossless = matches!(
         target,
@@ -347,7 +405,7 @@ mod tests {
     #[test]
     fn h264_aac_into_mkv_and_mov_is_pure_copy() {
         for t in [Container::Mkv, Container::Mov, Container::Mp4] {
-            let plan = plan_container(t, &clip("h264", "aac", ""), None, 90);
+            let plan = plan_container(t, &clip("h264", "aac", ""), None, 90, None);
             assert!(plan.is_pure_copy(), "{t:?}");
             assert!(has(&plan.args, ["-c:v:0", "copy"]));
             assert!(has(&plan.args, ["-c:a:0", "copy"]));
@@ -357,29 +415,29 @@ mod tests {
     #[test]
     fn webm_needs_vp9_and_opus_for_h264_aac() {
         let m = clip("h264", "aac", "");
-        let plan = plan_container(Container::Webm, &m, None, 90);
+        let plan = plan_container(Container::Webm, &m, None, 90, None);
         assert_eq!(plan.video_encoder.as_deref(), Some(VP9));
         assert_eq!(plan.audio_reencoded, 1);
         assert!(has(&plan.args, ["-c:a:0", "libopus"]));
-        assert!(!needs_h264(Container::Webm, &m));
+        assert!(!needs_h264(Container::Webm, &m, None));
     }
 
     #[test]
     fn webm_vp9_opus_into_mkv_and_mp4_copies() {
         let m = clip("vp9", "opus", "");
-        assert!(plan_container(Container::Mkv, &m, None, 90).is_pure_copy());
-        assert!(plan_container(Container::Mp4, &m, None, 90).is_pure_copy());
+        assert!(plan_container(Container::Mkv, &m, None, 90, None).is_pure_copy());
+        assert!(plan_container(Container::Mp4, &m, None, 90, None).is_pure_copy());
         // MOV cannot hold VP9: only the video is re-encoded.
-        let mov = plan_container(Container::Mov, &m, Some("h264_mf"), 90);
+        let mov = plan_container(Container::Mov, &m, Some("h264_mf"), 90, None);
         assert_eq!(mov.video_encoder.as_deref(), Some("h264_mf"));
         assert_eq!(mov.audio_reencoded, 1, "opus does not fit MOV");
-        assert!(needs_h264(Container::Mov, &m));
+        assert!(needs_h264(Container::Mov, &m, None));
     }
 
     #[test]
     fn only_the_incompatible_stream_is_reencoded() {
         // H.264 video is fine in MP4; FLAC audio is not.
-        let plan = plan_container(Container::Mp4, &clip("h264", "flac", ""), None, 90);
+        let plan = plan_container(Container::Mp4, &clip("h264", "flac", ""), None, 90, None);
         assert!(plan.video_encoder.is_none());
         assert_eq!(plan.audio_reencoded, 1);
         assert!(has(&plan.args, ["-c:v:0", "copy"]));
@@ -388,19 +446,19 @@ mod tests {
 
     #[test]
     fn hevc_into_mp4_gets_the_apple_tag() {
-        let plan = plan_container(Container::Mp4, &clip("hevc", "aac", ""), None, 90);
+        let plan = plan_container(Container::Mp4, &clip("hevc", "aac", ""), None, 90, None);
         assert!(has(&plan.args, ["-tag:v:0", "hvc1"]));
-        let mkv = plan_container(Container::Mkv, &clip("hevc", "aac", ""), None, 90);
+        let mkv = plan_container(Container::Mkv, &clip("hevc", "aac", ""), None, 90, None);
         assert!(!mkv.args.contains(&"-tag:v:0".to_string()));
     }
 
     #[test]
     fn faststart_only_for_mp4_and_mov() {
         let m = clip("h264", "aac", "");
-        assert!(plan_container(Container::Mp4, &m, None, 90)
+        assert!(plan_container(Container::Mp4, &m, None, 90, None)
             .args
             .contains(&"+faststart".into()));
-        assert!(!plan_container(Container::Mkv, &m, None, 90)
+        assert!(!plan_container(Container::Mkv, &m, None, 90, None)
             .args
             .contains(&"+faststart".into()));
     }
@@ -411,12 +469,12 @@ mod tests {
             {"index":3,"codec_type":"subtitle","codec_name":"hdmv_pgs_subtitle"},
             {"index":4,"codec_type":"attachment","codec_name":"ttf"}"#;
         let m = clip("h264", "aac", extra);
-        let mp4 = plan_container(Container::Mp4, &m, None, 90);
+        let mp4 = plan_container(Container::Mp4, &m, None, 90, None);
         assert_eq!(mp4.subs_converted, 1);
         assert!(has(&mp4.args, ["-c:s:0", "mov_text"]));
         assert!(mp4.dropped.iter().any(|d| d.contains("hdmv_pgs_subtitle")));
         assert!(mp4.dropped.iter().any(|d| d.contains("attachment")));
-        let mkv = plan_container(Container::Mkv, &m, None, 90);
+        let mkv = plan_container(Container::Mkv, &m, None, 90, None);
         assert_eq!(mkv.subs_converted, 0);
         assert!(has(&mkv.args, ["-c:s:1", "copy"]), "PGS is kept in MKV");
     }
@@ -424,7 +482,7 @@ mod tests {
     #[test]
     fn cover_art_is_not_mapped() {
         let extra = r#",{"index":2,"codec_type":"video","codec_name":"mjpeg","width":300,"height":300,"disposition":{"attached_pic":1}}"#;
-        let plan = plan_container(Container::Mkv, &clip("h264", "aac", extra), None, 90);
+        let plan = plan_container(Container::Mkv, &clip("h264", "aac", extra), None, 90, None);
         assert!(!plan.args.contains(&"0:2".to_string()));
         assert_eq!(plan.dropped.len(), 1);
     }
@@ -435,9 +493,9 @@ mod tests {
             r#"{"streams":[{"index":0,"codec_type":"video","codec_name":"mpeg4","width":853,"height":480}],"format":{}}"#,
         )
         .unwrap();
-        let enc = plan_container(Container::Mkv, &m, None, 90);
+        let enc = plan_container(Container::Mkv, &m, None, 90, None);
         assert!(enc.is_pure_copy(), "mpeg4 fits MKV");
-        let mov_enc = plan_container(Container::Webm, &m, None, 90);
+        let mov_enc = plan_container(Container::Webm, &m, None, 90, None);
         assert!(mov_enc.args.contains(&"-filter:v:0".to_string()));
         assert!(!enc.args.contains(&"-filter:v:0".to_string()));
     }
@@ -446,8 +504,8 @@ mod tests {
     fn bitrate_scales_with_quality_and_never_exceeds_a_high_source() {
         let m = clip("mpeg2video", "aac", "");
         let v = m.primary_video().unwrap();
-        let low = h264_bitrate(v, &m, 10);
-        let high = h264_bitrate(v, &m, 100);
+        let low = h264_bitrate(v, &m, 10, None);
+        let high = h264_bitrate(v, &m, 100, None);
         assert!(low < high);
         assert!(high <= 8_000_000, "capped at the 8 Mbit/s source");
     }
@@ -461,15 +519,63 @@ mod tests {
     #[test]
     fn aac_audio_is_extracted_by_copy_and_others_go_through_wav() {
         let aac = clip("h264", "aac", "");
-        let direct = plan_audio_direct(AudioTarget::M4a, &aac).unwrap();
+        let direct = plan_audio_direct(AudioTarget::M4a, &aac, &AudioOptions::default()).unwrap();
         assert!(has(&direct, ["-c:a", "copy"]));
         assert!(has(&direct, ["-f", "ipod"]));
         let ac3 = clip("h264", "ac3", "");
-        let re = plan_audio_direct(AudioTarget::Aac, &ac3).unwrap();
+        let re = plan_audio_direct(AudioTarget::Aac, &ac3, &AudioOptions::default()).unwrap();
         assert!(has(&re, ["-c:a", "aac"]));
-        assert!(plan_audio_direct(AudioTarget::Mp3, &aac).is_none());
-        let wav = plan_audio_wav(AudioTarget::Mp3, &aac).unwrap();
+        assert!(plan_audio_direct(AudioTarget::Mp3, &aac, &AudioOptions::default()).is_none());
+        let wav = plan_audio_wav(AudioTarget::Mp3, &aac, &AudioOptions::default()).unwrap();
         assert!(has(&wav, ["-c:a", "pcm_s16le"]));
+    }
+
+    #[test]
+    fn a_taller_video_is_scaled_down_and_a_smaller_one_kept() {
+        // 1920x1080 H.264: copyable into MP4 and MKV as it is.
+        let m = clip("h264", "aac", "");
+        let v = m.primary_video().unwrap();
+        assert_eq!(shrink_to(v, Some(720)), Some(720));
+        assert_eq!(shrink_to(v, Some(1080)), None, "same height: no scaling");
+        assert_eq!(shrink_to(v, Some(2160)), None, "never scaled up");
+        assert_eq!(shrink_to(v, Some(721)), Some(720), "even heights only");
+        assert!(plan_container(Container::Mp4, &m, None, 90, Some(1080)).is_pure_copy());
+
+        assert!(needs_h264(Container::Mkv, &m, Some(720)));
+        let mkv = plan_container(Container::Mkv, &m, Some("h264_mf"), 90, Some(720));
+        assert_eq!(mkv.video_encoder.as_deref(), Some("h264_mf"));
+        assert!(has(&mkv.args, ["-filter:v:0", "scale=-2:720"]));
+        // Audio still copied: only the video changes.
+        assert!(has(&mkv.args, ["-c:a:0", "copy"]));
+        let webm = plan_container(Container::Webm, &m, None, 90, Some(480));
+        assert!(has(&webm.args, ["-filter:v:0", "scale=-2:480"]));
+
+        // Fewer pixels, a lower bitrate.
+        let full = h264_bitrate(v, &m, 90, None);
+        let small = h264_bitrate(v, &m, 90, Some(540));
+        assert!(small * 3 < full, "{small} vs {full}");
+    }
+
+    #[test]
+    fn aac_settings_force_an_encode_with_them() {
+        let aac = clip("h264", "aac", "");
+        let asked = AudioOptions {
+            bitrate_kbps: Some(128),
+            sample_rate: Some(48_000),
+            channels: Some(1),
+            ..AudioOptions::default()
+        };
+        let plan = plan_audio_direct(AudioTarget::M4a, &aac, &asked).unwrap();
+        assert!(!has(&plan, ["-c:a", "copy"]), "settings mean a re-encode");
+        assert!(has(&plan, ["-b:a", "128k"]));
+        assert!(has(&plan, ["-ar", "48000"]));
+        assert!(has(&plan, ["-ac", "1"]));
+        // WAV takes the sample rate and mono in the decode itself.
+        let wav = plan_audio_wav(AudioTarget::Wav, &aac, &asked).unwrap();
+        assert!(has(&wav, ["-ar", "48000"]) && has(&wav, ["-ac", "1"]));
+        // Other targets get them from their encoder, not twice.
+        let flac = plan_audio_wav(AudioTarget::Flac, &aac, &asked).unwrap();
+        assert!(!has(&flac, ["-ac", "1"]));
     }
 
     #[test]
@@ -479,12 +585,14 @@ mod tests {
         )
         .unwrap();
         assert!(has(
-            &plan_audio_wav(AudioTarget::Mp3, &m).unwrap(),
+            &plan_audio_wav(AudioTarget::Mp3, &m, &AudioOptions::default()).unwrap(),
             ["-ac", "2"]
         ));
-        assert!(!plan_audio_wav(AudioTarget::Flac, &m)
-            .unwrap()
-            .contains(&"-ac".into()));
+        assert!(
+            !plan_audio_wav(AudioTarget::Flac, &m, &AudioOptions::default())
+                .unwrap()
+                .contains(&"-ac".into())
+        );
     }
 
     #[test]
@@ -495,12 +603,12 @@ mod tests {
         .unwrap();
         for lossless in [AudioTarget::Wav, AudioTarget::Flac, AudioTarget::Aiff] {
             assert!(has(
-                &plan_audio_wav(lossless, &m).unwrap(),
+                &plan_audio_wav(lossless, &m, &AudioOptions::default()).unwrap(),
                 ["-c:a", "pcm_s24le"]
             ));
         }
         assert!(has(
-            &plan_audio_wav(AudioTarget::Mp3, &m).unwrap(),
+            &plan_audio_wav(AudioTarget::Mp3, &m, &AudioOptions::default()).unwrap(),
             ["-c:a", "pcm_s16le"]
         ));
     }
@@ -509,12 +617,14 @@ mod tests {
     fn opus_input_is_resampled_to_48k() {
         let m = clip("h264", "aac", "");
         assert!(has(
-            &plan_audio_wav(AudioTarget::Opus, &m).unwrap(),
+            &plan_audio_wav(AudioTarget::Opus, &m, &AudioOptions::default()).unwrap(),
             ["-ar", "48000"]
         ));
-        assert!(!plan_audio_wav(AudioTarget::Wav, &m)
-            .unwrap()
-            .contains(&"-ar".into()));
+        assert!(
+            !plan_audio_wav(AudioTarget::Wav, &m, &AudioOptions::default())
+                .unwrap()
+                .contains(&"-ar".into())
+        );
     }
 
     #[test]
@@ -523,6 +633,6 @@ mod tests {
             r#"{"streams":[{"index":0,"codec_type":"video","codec_name":"h264","width":2,"height":2}],"format":{}}"#,
         )
         .unwrap();
-        assert!(plan_audio_wav(AudioTarget::Wav, &m).is_none());
+        assert!(plan_audio_wav(AudioTarget::Wav, &m, &AudioOptions::default()).is_none());
     }
 }

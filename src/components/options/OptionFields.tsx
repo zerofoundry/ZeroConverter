@@ -29,6 +29,8 @@ export function valueLabel(t: TFunction, spec: OptionSpecDto, value: OptionValue
   if (named !== missing) return named;
   if (typeof value === "string") return value.toUpperCase();
   switch (spec.unit) {
+    case "p":
+      return `${value}p`;
     case "hz":
       return value % 1000 === 0 ? `${value / 1000} kHz` : `${(value / 1000).toFixed(1)} kHz`;
     case undefined:

@@ -15,7 +15,7 @@ const imageDescriptors = [
   rw("dds"), rw("ktx2"), ro("exr"), ro("hdr"), ro("svg"), ro("gif"), ro("psd"), ro("jxl"),
   wo("pdf"), wo("avif"),
 ];
-const audioDescriptors = [rw("wav"), rw("mp3"), rw("flac"), rw("aiff"), rw("opus"), ro("ogg"), ro("aac"), ro("m4a")];
+const audioDescriptors = [rw("wav"), rw("mp3"), rw("flac"), rw("aiff"), rw("opus"), ro("ogg"), rw("aac"), rw("m4a")];
 
 const videoDescriptors = [
   rw("mp4"), rw("mkv"), rw("mov"), rw("webm"), ro("avi"),
@@ -38,11 +38,16 @@ const bitrate = (presets: number[], def: number | null) =>
 const audioOptions: Record<string, unknown[]> = {
   wav: [sampleRate, channels], flac: [sampleRate, channels], aiff: [sampleRate, channels],
   mp3: [bitrate([128, 192, 256, 320], 320), sampleRate, channels], opus: [bitrate([64, 96, 128, 192], null), channels],
+  m4a: [bitrate([128, 192, 256, 320], null), sampleRate, channels], aac: [bitrate([128, 192, 256, 320], null), sampleRate, channels],
 };
 const optionsFor = (family: string, id: string): unknown[] => {
   if (family === "image") {
     const own =
       id === "jpg" || id === "avif" ? [slider("quality", 90)]
+      : id === "webp" ? [
+          { key: "webp_mode", type: "string", control: "choice", values: ["lossless", "lossy"], default: "lossless", scope: "format", quick: true },
+          { ...slider("quality", 90), show_when: { key: "webp_mode", values: ["lossy"] } },
+        ]
       : id === "dds" ? [
           { key: "dds_format", type: "string", control: "choice", values: ["bc7", "bc3", "bc1", "bc4", "bc5", "bc2"], default: "bc7", scope: "format", quick: true },
           { key: "dds_mipmaps", type: "boolean", control: "toggle", default: false, scope: "format", quick: false },
@@ -50,7 +55,13 @@ const optionsFor = (family: string, id: string): unknown[] => {
       : [];
     return [...own, ...resize];
   }
-  if (family === "video" && ["mp4", "mkv", "mov", "webm"].includes(id)) return [slider("quality", 90)];
+  if (family === "video" && ["mp4", "mkv", "mov", "webm"].includes(id)) {
+    return [
+      slider("quality", 90),
+      { key: "max_height", type: "integer", control: "number", min: 144, max: 4320, presets: [2160, 1440, 1080, 720, 480], default: null, unit: "p", scope: "format", quick: true },
+    ];
+  }
+  if (family === "video" && id === "wav") return [sampleRate, channels];
   return audioOptions[id] ?? [];
 };
 const withOptions = (family: string, descs: ReturnType<typeof rw>[]) =>
