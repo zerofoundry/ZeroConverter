@@ -1,5 +1,5 @@
 import { getCurrentWebview } from "@tauri-apps/api/webview";
-import { getCurrentWindow } from "@tauri-apps/api/window";
+import { getCurrentWindow, LogicalSize } from "@tauri-apps/api/window";
 
 export type WindowEventUnsubscribe = () => void;
 
@@ -43,4 +43,8 @@ export const windowChrome = {
   onResized: (handler: () => void) => getCurrentWindow().onResized(handler),
   /** Interface scale, like browser zoom: 1 = 100%. */
   setZoom: (factor: number) => getCurrentWebview().setZoom(factor),
+  /** Resize this window's content area (logical pixels). */
+  setSize: (width: number, height: number) => getCurrentWindow().setSize(new LogicalSize(width, height)),
+  /** The title shown in the taskbar and Alt+Tab. */
+  setTitle: (title: string) => getCurrentWindow().setTitle(title),
 };

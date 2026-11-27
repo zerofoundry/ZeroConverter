@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
+import { X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { quickJob, type QuickJobInfo } from "../../application/renameConvert";
 import { requestOptions, withValue, type OptionValues } from "../../application/outputOptions.mjs";
@@ -19,6 +20,9 @@ export const QuickConvert: React.FC<QuickConvertProps> = ({ id }) => {
   const [info, setInfo] = useState<QuickJobInfo | null>(null);
   const [values, setValues] = useState<OptionValues>({});
   const [maxSide, setMaxSide] = useState<string>("");
+  const headerRef = useRef<HTMLDivElement>(null);
+  const bodyRef = useRef<HTMLDivElement>(null);
+  const footerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     quickJob.info(id).then(setInfo).catch(() => setInfo(null));
@@ -60,14 +64,44 @@ export const QuickConvert: React.FC<QuickConvertProps> = ({ id }) => {
 
   const stem = info?.name.replace(/\.[^.]+$/, "") ?? "";
 
+  // The window takes the height of what it shows: more options (WebP lossy
+  // adds a quality slider) must never push Convert out of view.
+  useEffect(() => {
+    const body = bodyRef.current;
+    if (!body) return;
+    const fit = () =>
+      quickJob.fitWindow(
+        WINDOW_WIDTH,
+        (headerRef.current?.offsetHeight ?? 0) + body.offsetHeight + (footerRef.current?.offsetHeight ?? 0),
+      );
+    const observer = new ResizeObserver(fit);
+    observer.observe(body);
+    fit();
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (info) quickJob.titleWindow(`${stem}.${info.target} · ZeroConverter`);
+  }, [info, stem]);
+
   return (
     <div className="flex h-screen flex-col bg-titlebar text-text-primary select-none">
-      <div data-tauri-drag-region className="flex h-11 shrink-0 items-center gap-2 px-4">
+      <div ref={headerRef} data-tauri-drag-region className="flex h-11 shrink-0 items-center gap-2 ps-4 pe-1.5">
         <img src="/zeroconverter-mark.svg" alt="" width={16} height={16} className="pointer-events-none h-4 w-4" />
-        <span className="pointer-events-none font-brand text-[13px] font-semibold">ZeroConverter</span>
+        <span className="pointer-events-none flex-1 font-brand text-[13px] font-semibold">ZeroConverter</span>
+        <button
+          type="button"
+          onClick={cancel}
+          aria-label={t("quick.cancel")}
+          title={t("quick.cancel")}
+          className="grid h-8 w-8 place-items-center rounded-control text-text-secondary transition-colors duration-150 hover:bg-surface-2 hover:text-text-primary"
+        >
+          <X size={15} aria-hidden="true" />
+        </button>
       </div>
 
-      <div className="flex-1 space-y-5 px-4 pb-4">
+      <div className="min-h-0 flex-1 overflow-y-auto">
+      <div ref={bodyRef} className="space-y-5 px-4 pb-4">
         {info ? (
           <p className="truncate text-[15px] font-medium" title={info.name}>
             <span className="text-text-secondary">{stem}.</span>
@@ -115,8 +149,9 @@ export const QuickConvert: React.FC<QuickConvertProps> = ({ id }) => {
           </div>
         )}
       </div>
+      </div>
 
-      <div className="flex shrink-0 justify-end gap-2 px-4 pb-4">
+      <div ref={footerRef} className="flex shrink-0 justify-end gap-2 px-4 pb-4 pt-1">
         <button
           type="button"
           onClick={cancel}
@@ -136,6 +171,9 @@ export const QuickConvert: React.FC<QuickConvertProps> = ({ id }) => {
     </div>
   );
 };
+
+/** Matches the width the window opens at (`open_quick_window`). */
+const WINDOW_WIDTH = 380;
 
 function formatLargeSize(bytes: number): string {
   const gb = bytes / 1024 ** 3;

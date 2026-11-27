@@ -1239,11 +1239,14 @@ fn open_quick_window(app: &AppHandle, id: &str) {
     let _ = app.clone().run_on_main_thread(move || {
         let _ = tauri::WebviewWindowBuilder::new(&app, label, url)
             .title("ZeroConverter")
-            .inner_size(380.0, 300.0)
+            // The page then fits the height to its options (QuickConvert).
+            .inner_size(380.0, 340.0)
             .resizable(false)
             .decorations(false)
             .always_on_top(true)
-            .skip_taskbar(true)
+            // In the taskbar and Alt+Tab, so a window that lost focus can
+            // be found again; the file waits under its `+` name until then.
+            .skip_taskbar(false)
             .center()
             .focused(true)
             .build();

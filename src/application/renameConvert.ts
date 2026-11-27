@@ -3,6 +3,7 @@ import { renameGateway, type QuickJobInfo, type QuickOptions, type WatchedFolder
 import { pickFolder } from "../platform/tauri/dialogGateway";
 import i18n from "../i18n";
 import { SettingsManager } from "./settingsStore";
+import { windowChrome } from "../platform/tauri/windowGateway";
 
 export type { QuickJobInfo, QuickOptions, WatchedFolder };
 
@@ -107,4 +108,12 @@ export const quickJob = {
   cancel: renameGateway.quickCancel,
   /** The options last chosen in the main window, so `+` starts from them. */
   savedValues: () => SettingsManager.load().then((settings) => settings.optionValues),
+  /** Grows or shrinks the `+` window to its content, so Convert is never cut off. */
+  fitWindow: (width: number, height: number) =>
+    windowChrome.setSize(width, Math.min(QUICK_MAX_HEIGHT, Math.ceil(height))).catch(() => {}),
+  /** Names the window after the file, so it can be found in the taskbar and Alt+Tab. */
+  titleWindow: (title: string) => windowChrome.setTitle(title).catch(() => {}),
 };
+
+/** Past this the `+` window scrolls instead of growing. */
+const QUICK_MAX_HEIGHT = 640;

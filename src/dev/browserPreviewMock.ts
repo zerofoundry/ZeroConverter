@@ -166,7 +166,7 @@ export function installBrowserPreviewMock() {
         extraFolders = extraFolders.filter((p) => p !== (args as { path: string }).path);
         return null;
       case "quick_job_info":
-        return { name: "holiday-photo.png", source: "png", target: "jpg", family: "image", large_bytes: null, options: optionsFor("image", "jpg") };
+        return { name: "holiday-photo.png", source: "png", target: "webp", family: "image", large_bytes: null, options: optionsFor("image", "webp") };
       case "plugin:window|is_maximized":
         return false;
       // "Choose files" adds a sample video, which walks through the FFmpeg card.
