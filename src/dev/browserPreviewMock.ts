@@ -153,7 +153,7 @@ export function installBrowserPreviewMock() {
         return null;
       case "receipt_current": {
         // What the Rust side sends for a finished rename, worded from the same catalog.
-        const nat = (key: string, o?: Record<string, string>) => i18n.t(`native.rename.${key}`, o);
+        const nat = (key: string, o: Record<string, string> = {}) => i18n.t(`native.rename.${key}`, o);
         return { tone: "success", title: "photo.png → photo.webp", body: `${nat("converted", { time: "106 ms" })}${i18n.t("native.sentenceJoin")}${nat(keepOriginal ? "keptOriginal" : "inBin")}` };
       }
       default:

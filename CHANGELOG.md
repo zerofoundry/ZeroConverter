@@ -3,6 +3,7 @@
 ## Unreleased
 
 - M4A and AAC output for audio files (#9): rename `song.mp3` to `song.m4a`. Encoded with FFmpeg's AAC encoder at 192 kbps, or stream-copied when the source is already AAC; needs FFmpeg like video does.
+- Frontend dependencies updated past all reported npm advisories (#8): Vite 7.3.8, PostCSS 8.5.33 and their build tooling; i18next 27 with react-i18next 18. `npm audit` reports none.
 
 ## 0.1.1
 
