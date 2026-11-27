@@ -16,7 +16,7 @@ Each step says what you should see. If something else happens, stop and note the
 3. In Explorer, rename `a.png` to `a.webp`. A notice says it was converted; `a.webp` is a real WebP and `a.png` is in the Recycle Bin.
 4. Rename `b.png` to `b.png@64`. The result is `b.png`, at most 64 pixels on its longer side; the original is in the Recycle Bin.
 5. Rename `c.png` to `c.jpg&`. `c.jpg` appears and `c.png` stays.
-6. Rename `d.png` to `d.webp+`. A small window asks for quality and size; cancel it. The file is named `d.png` again.
+6. Rename `d.png` to `d.webp+`. A small window shows the WebP options (Compression, and Quality once Lossy is chosen) and the longest side, with Cancel and Convert in view. It is in the taskbar and in Alt+Tab, titled `d.webp · ZeroConverter`. Close it with its X. The file is named `d.png` again.
 7. Rename the folder `pics` to `pics.webp`. Its three files become WebP; the folder keeps its name.
 8. On the Desktop, convert a file by renaming it. The new file's icon stays where the old one was.
 9. Turn on **Keep the original file** in Settings; the `&` line under **Add to the new name** now says it sends the original to the Recycle Bin. Rename a PNG to `.webp`: both files stay, and the notice says Original kept. Rename another PNG to `.webp&`: only the `.webp` stays, the original is in the Recycle Bin, and the notice says Original is in the Recycle Bin. Turn **Keep the original file** back off.
