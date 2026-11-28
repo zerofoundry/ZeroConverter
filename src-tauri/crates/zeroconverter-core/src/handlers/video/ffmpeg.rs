@@ -58,7 +58,10 @@ pub(crate) const READY_MARKER: &str = "verified.sha256";
 fn managed() -> Option<Ffmpeg> {
     let dir = managed_dir()?;
     let marker = std::fs::read_to_string(dir.join(READY_MARKER)).ok()?;
-    if marker.trim() != PIN.sha256 {
+    // The marker holds the SHA-256 the archive was verified against: the pin's,
+    // or the one published for the fallback build when the pin had gone away.
+    let marker = marker.trim();
+    if marker.len() != 64 || !marker.bytes().all(|b| b.is_ascii_hexdigit()) {
         return None;
     }
     let found = Ffmpeg {
