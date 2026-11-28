@@ -6,7 +6,8 @@
 //! `autobuild-*` release, take the `win64-lgpl` zip (NOT `-gpl` or `-shared`),
 //! `sha256sum` it and update the constants below. Old autobuilds are pruned
 //! upstream, so the pin is refreshed for every ZeroConverter release; an
-//! install whose pin has gone away says so instead of failing silently.
+//! install whose pin has gone away falls back to the rolling `latest` build
+//! (see `install.rs`).
 
 pub struct Pin {
     /// Folder name under `<app data>/ffmpeg/`.
